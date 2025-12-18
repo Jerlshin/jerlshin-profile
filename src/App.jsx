@@ -79,7 +79,7 @@ const portfolioData = {
     {
       "role": "Artificial Intelligence Developer",
       "company": "Botter Solutions",
-      "location": "Haryana, India",
+      "location": "Bangalore, India",
       "period": "May 2025 - July 2025",
       "description": [
         "Developed an end-to-end transformer-based AI pipeline for intelligent table recognition, improving processing throughput fivefold.",
