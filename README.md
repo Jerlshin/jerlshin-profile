@@ -1,4 +1,4 @@
-```markdown
+
 # Jerlshin J G | Professional AI Research Portfolio
 
 A modern, high-performance personal portfolio website built with **React 19**, **Vite**, and **Tailwind CSS 4.0**. This repository showcases the research, publications, and professional journey of Jerlshin J G, an AI Researcher specializing in Multimodal Intelligence and RAG systems.
@@ -89,7 +89,5 @@ This project is intended for personal portfolio use. All rights reserved by the 
 
 ---
 
-
-```
 
 ```
