@@ -1,0 +1,65 @@
+---
+/**
+ * /404 — the not-found page.
+ *
+ * Vercel serves `dist/404.html` for any unmatched path on a static deployment,
+ * so this is a plain prerendered page and not a function. It is listed in §3's
+ * directory structure and was the last route in it with no file.
+ *
+ * IT OFFERS ROUTES, NOT AN APOLOGY. The two ways someone arrives here are a
+ * mistyped URL and a link to something that moved; both are answered by the
+ * same thing — the actual list of places to go, generated from `site.nav` so it
+ * cannot fall out of step with the header.
+ *
+ * `noindex`, and no `searchKind`: a 404 that is indexed or searchable is a 404
+ * that people arrive at from search, which is the only thing worse than a 404.
+ */
+import PageLayout from '../layouts/PageLayout.astro';
+import Btn from '../components/primitives/Btn.astro';
+import { site } from '../config/site.ts';
+---
+
+<PageLayout
+  title="Page not found"
+  description="That URL does not exist on this site."
+  lede="That address does not exist here. It may have been mistyped, or it may have moved during the site's rebuild."
+  eyebrow="404"
+  width="content"
+  noindex
+>
+  <nav class="routes" aria-label="Main sections">
+    <ul>
+      {
+        site.nav.map((item) => (
+          <li>
+            <a href={item.href}>{item.label}</a>
+          </li>
+        ))
+      }
+      <li><a href="/about">About</a></li>
+    </ul>
+  </nav>
+
+  <div class="actions">
+    <Btn href="/" variant="primary" iconStart="home">Back to the homepage</Btn>
+    <Btn href="/search" variant="secondary" iconStart="search">Search the site</Btn>
+  </div>
+</PageLayout>
+
+<style>
+  .routes ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-block-start: var(--space-block);
+  }
+</style>

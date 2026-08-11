@@ -1,7 +1,0 @@
-@import "tailwindcss";
-
-/* In Tailwind v4, we override the default 'dark' variant 
-  to use the selector strategy (looking for the .dark class) 
-  instead of the system preference (media query).
-*/
-@variant dark (&:where(.dark, .dark *));

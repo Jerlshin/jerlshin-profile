@@ -1,0 +1,115 @@
+---
+/**
+ * Callout — a labelled block that interrupts the reading flow on purpose.
+ *
+ * Two rules it enforces so authors cannot get them wrong:
+ *
+ *  1. THE TYPE IS NEVER CARRIED BY COLOUR ALONE (WCAG 1.4.1). Every variant
+ *     renders a visible text label, so "warning" is legible to a reader who
+ *     cannot distinguish the amber border from the blue one.
+ *  2. IT IS AN <aside>, not a <div>. A screen reader can then skip it as a
+ *     unit, which is the entire point of setting content aside.
+ *
+ * Colour comes from the same status tokens StatusBadge uses, so the palette
+ * check in scripts/check-contrast.mjs already covers these pairings.
+ */
+import Icon from '../primitives/Icon.astro';
+
+type Variant = 'note' | 'tip' | 'warning' | 'caution';
+
+interface Props {
+  type?: Variant;
+  /** Overrides the default label. The label is never removed. */
+  title?: string;
+  class?: string;
+}
+
+const VARIANTS: Record<Variant, { label: string; icon: string }> = {
+  note: { label: 'Note', icon: 'info' },
+  tip: { label: 'Tip', icon: 'lightbulb' },
+  warning: { label: 'Warning', icon: 'triangle-alert' },
+  caution: { label: 'Caution', icon: 'octagon-alert' },
+};
+
+const { type = 'note', title, class: className } = Astro.props;
+const { label, icon } = VARIANTS[type];
+---
+
+<aside class:list={['callout', `type-${type}`, className]}>
+  <p class="head">
+    <Icon name={icon} size="1.0625rem" class="glyph" />
+    <span class="label">{title ?? label}</span>
+  </p>
+  <div class="body">
+    <slot />
+  </div>
+</aside>
+
+<style>
+  .callout {
+    margin-block: 1.75em;
+    padding: 1rem 1.125rem;
+    border: 1px solid var(--line);
+    border-inline-start: 3px solid var(--edge);
+    border-radius: var(--radius-sm);
+    background-color: var(--tint);
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    color: var(--hue);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .glyph {
+    flex: none;
+  }
+
+  .body {
+    margin-block-start: 0.5rem;
+    color: var(--ink-2);
+    font-size: var(--fs-base);
+    line-height: var(--lh-prose);
+  }
+
+  /* The first and last children lose their outer margin so the padding above
+     is the only thing setting the callout's internal spacing. */
+  .body :global(> :first-child) {
+    margin-block-start: 0;
+  }
+
+  .body :global(> :last-child) {
+    margin-block-end: 0;
+  }
+
+  /* Each variant maps the shared status tokens onto three local names; nothing
+     below this line is a colour literal (§6.2's one rule). */
+  .type-note {
+    --hue: var(--info);
+    --tint: var(--info-soft);
+    --edge: var(--info);
+  }
+
+  .type-tip {
+    --hue: var(--ok);
+    --tint: var(--ok-soft);
+    --edge: var(--ok);
+  }
+
+  .type-warning {
+    --hue: var(--warn);
+    --tint: var(--warn-soft);
+    --edge: var(--warn);
+  }
+
+  .type-caution {
+    --hue: var(--accent);
+    --tint: var(--accent-soft);
+    --edge: var(--accent);
+  }
+</style>

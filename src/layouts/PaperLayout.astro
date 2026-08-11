@@ -1,0 +1,208 @@
+---
+/**
+ * PaperLayout — an L3 research detail page.
+ *
+ * THE ABSTRACT IS IN THE HTML, ABOVE THE BODY. That is checklist item #1 in
+ * §7.2 (`curl` the URL and find the abstract in the source), and it is the
+ * single most important property of this page: the v1 SPA served
+ * `<div id="root"></div>` to every crawler and scholarly indexer that asked.
+ *
+ * `related` resolves through `reference('projects')`, so a cross-link is
+ * validated at build time. A typo in a slug fails the build with a file name
+ * rather than shipping a 404 that nobody clicks often enough to notice.
+ */
+import { getEntry, type CollectionEntry } from 'astro:content';
+import BaseLayout from './BaseLayout.astro';
+import Container from '../components/primitives/Container.astro';
+import Prose from '../components/primitives/Prose.astro';
+import Breadcrumbs from '../components/chrome/Breadcrumbs.astro';
+import PaperMeta from '../components/content/PaperMeta.astro';
+import MetricGrid from '../components/content/MetricGrid.astro';
+import BibtexBlock from '../components/content/BibtexBlock.astro';
+import TagList from '../components/content/TagList.astro';
+import ProjectCard from '../components/content/ProjectCard.astro';
+import MathStyles from '../components/mdx/MathStyles.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
+import { ogPath } from '../lib/og.ts';
+import { isoDate } from '../lib/dates.ts';
+import { KIND } from '../lib/kinds.ts';
+
+interface Props {
+  paper: CollectionEntry<'research'>;
+}
+
+const { paper } = Astro.props;
+const { data } = paper;
+
+/**
+ * Resolved here rather than in the page, because every paper page needs it and
+ * a layout that takes pre-resolved props pushes the same four lines into every
+ * caller. `getEntry` on a `reference()` is guaranteed to resolve — the schema
+ * validated it at build time.
+ */
+const related = await Promise.all(data.related.map((ref) => getEntry(ref)));
+
+/**
+ * Research bodies routinely contain notation. There is no `math` flag on the
+ * research schema, so the stylesheet is loaded for every paper page — the
+ * alternative is a paper whose one inline equation renders as raw TeX, which
+ * is worse than 23 KB. Blog posts, which are the volume case, keep the gate.
+ */
+---
+
+{
+  /*
+   * THE SOCIAL CARD IS THE GENERATED ONE, NOT `cover`. A cover is a content
+   * figure with whatever aspect ratio its source had; cropping it to 1200×630
+   * puts the subject somewhere nobody chose. The generated card is the right
+   * shape by construction and always carries the title — see src/lib/og.ts.
+   */
+}
+<BaseLayout
+  title={data.title}
+  description={data.tldr}
+  type="article"
+  image={ogPath(`research/${paper.id}`)}
+  imageAlt={`${data.title} — ${data.venue.short ?? data.venue.name}`}
+  publishedTime={isoDate(data.date)}
+>
+  <Fragment slot="head">
+    <MathStyles />
+    <JsonLd kind="paper" entry={paper} />
+  </Fragment>
+
+  <Container width="content" class="paper">
+    <Breadcrumbs
+      items={[{ label: 'Research', href: '/research' }, { label: data.title }]}
+      class="crumbs"
+    />
+
+    <article
+      data-pagefind-body
+      data-pagefind-meta={`kind:${KIND.research}`}
+      data-pagefind-filter={`kind:${KIND.research}`}
+    >
+      <header class="head">
+        <h1 class="title">{data.title}</h1>
+        <PaperMeta data={data} class="meta" />
+      </header>
+
+      {
+        /* An <h2> so the abstract is a real landmark in the document outline —
+          it is what a reader, a crawler, and an indexer all come here for. */
+      }
+      <section class="abstract" aria-labelledby="abstract-heading">
+        <h2 class="overline" id="abstract-heading">Abstract</h2>
+        <p class="abstract-text">{data.abstract}</p>
+      </section>
+
+      {data.metrics.length > 0 && <MetricGrid metrics={data.metrics} class="metrics" />}
+
+      <Prose class="body">
+        <slot />
+      </Prose>
+    </article>
+
+    <footer class="foot" data-pagefind-ignore>
+      <section aria-labelledby="topics-heading" class="block">
+        <h2 class="overline" id="topics-heading">Topics</h2>
+        {
+          /* No `hrefFor`: research topics have no static archive route, so these
+            are inert chips rather than links to a page that does not exist. */
+        }
+        <TagList tags={data.topics} size="md" label="Research topics" class="topics" />
+      </section>
+
+      <section aria-labelledby="cite-heading" class="block">
+        <h2 class="overline" id="cite-heading">Cite this work</h2>
+        <BibtexBlock paper={paper} />
+      </section>
+
+      {
+        related.length > 0 && (
+          <section aria-labelledby="related-heading" class="block">
+            <h2 class="overline" id="related-heading">
+              Related projects
+            </h2>
+            <div class="related">
+              {related.map((project) => (
+                <ProjectCard project={project} level={3} compact />
+              ))}
+            </div>
+          </section>
+        )
+      }
+    </footer>
+  </Container>
+</BaseLayout>
+
+<style>
+  .paper {
+    padding-block: var(--space-section);
+  }
+
+  .crumbs {
+    margin-block-end: var(--space-block);
+  }
+
+  .title {
+    font-size: var(--fs-3xl);
+    text-wrap: balance;
+  }
+
+  .meta {
+    margin-block-start: 1.25rem;
+  }
+
+  .abstract {
+    margin-block-start: var(--space-block);
+    padding: 1.25rem 1.375rem;
+    border-inline-start: 2px solid var(--accent);
+    background-color: var(--surface-2);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
+
+  .abstract-text {
+    margin-block-start: 0.5rem;
+    max-inline-size: var(--measure);
+    color: var(--ink);
+    font-size: var(--fs-md);
+    line-height: var(--lh-prose);
+    text-wrap: pretty;
+  }
+
+  .metrics {
+    margin-block-start: var(--space-block);
+  }
+
+  .body {
+    margin-block-start: var(--space-block);
+  }
+
+  .foot {
+    margin-block-start: var(--space-section);
+    padding-block-start: var(--space-block);
+    border-block-start: 1px solid var(--line);
+  }
+
+  .block + .block {
+    margin-block-start: var(--space-block);
+  }
+
+  .topics {
+    margin-block-start: 0.625rem;
+  }
+
+  .related {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-block-start: 0.75rem;
+  }
+
+  @media (min-width: 48rem) {
+    .related {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

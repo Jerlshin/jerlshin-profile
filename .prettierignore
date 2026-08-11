@@ -1,0 +1,17 @@
+dist
+.astro
+node_modules
+package-lock.json
+pnpm-lock.yaml
+
+# Derived artifact: scripts/sync-katex-assets.mjs vendors these out of the npm
+# package on every dev and build run, so formatting them is churn on a file
+# that is about to be overwritten.
+public/katex/
+
+# Content bodies. Prettier's markdown parser rewrites `{/* … */}` MDX comments
+# into `{/_ … _/}` — valid emphasis in markdown, a syntax error in MDX — and
+# reflows an author's prose into a diff nobody asked for. `astro build` catches
+# the first (loudly, by file and line), but the fix is to not format content
+# in the first place. Frontmatter is YAML and needs no formatter either.
+src/content/**/*.mdx

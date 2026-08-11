@@ -1,0 +1,94 @@
+---
+/**
+ * PostMeta — the dateline under a post title: published, updated, reading time.
+ *
+ * `updatedDate` renders as a SEPARATE fact, not as a replacement for the
+ * publication date. Overwriting the original date is a small dishonesty that
+ * search engines and readers both notice: a 2019 post silently re-dated to
+ * today reads as new work. §4.4's refine already guarantees `updatedDate` never
+ * precedes `pubDate`, so the two can always be shown in order.
+ *
+ * Every <time> carries a machine-readable `datetime`, which is what the Phase 6
+ * JSON-LD and the RSS feed read.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import ReadingTime from './ReadingTime.astro';
+import type { ReadingTimeData } from '../../lib/reading-time.ts';
+import { formatDate, isoDate } from '../../lib/dates.ts';
+
+interface Props extends HTMLAttributes<'div'> {
+  pubDate: Date;
+  updatedDate?: Date;
+  readingTime?: ReadingTimeData;
+  /** Marks the post as a draft — only ever true in dev (§7.1 risk #13). */
+  draft?: boolean;
+}
+
+const { pubDate, updatedDate, readingTime, draft = false, class: className, ...rest } = Astro.props;
+---
+
+<div class:list={['meta', className]} {...rest}>
+  <time datetime={isoDate(pubDate)} data-pagefind-meta={`date:${isoDate(pubDate)}`} class="tabular">
+    {formatDate(pubDate)}
+  </time>
+
+  {
+    updatedDate && (
+      <>
+        <span class="sep" aria-hidden="true">
+          ·
+        </span>
+        <span class="updated">
+          Updated <time datetime={isoDate(updatedDate)}>{formatDate(updatedDate)}</time>
+        </span>
+      </>
+    )
+  }
+
+  {
+    readingTime && (
+      <>
+        <span class="sep" aria-hidden="true">
+          ·
+        </span>
+        <ReadingTime readingTime={readingTime} icon={false} />
+      </>
+    )
+  }
+
+  {
+    draft && (
+      <>
+        <span class="sep" aria-hidden="true">
+          ·
+        </span>
+        <span class="draft">Draft — not published</span>
+      </>
+    )
+  }
+</div>
+
+<style>
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.5rem;
+    color: var(--ink-3);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+  }
+
+  .sep {
+    color: var(--line-strong);
+  }
+
+  .draft {
+    padding: 0.1875rem 0.5rem;
+    border-radius: var(--radius-full);
+    color: var(--warn);
+    background-color: var(--warn-soft);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+  }
+</style>

@@ -1,0 +1,41 @@
+---
+title: 'AI-Powered Healthcare Communication Platform'
+summary: 'A real-time platform connecting patients and clinicians, using LoRA-PEFT tuned models and multi-agent coordination for context-aware medical conversation.'
+category: 'engineering'
+# `prototype`, not `shipped`: content.config.ts refuses a `shipped` project with
+# no links.repo or links.live, and it is right to. Add the link, then change
+# this one word.
+status: 'prototype'
+start: 2024-01-01
+end: null
+stack: ['LoRA-PEFT', 'Multi-Agent', 'Audio Understanding']
+tags: ['multi-agent', 'lora-peft', 'healthcare']
+featured: true
+order: 3
+
+# ── CONTENT STATUS ────────────────────────────────────────────────────────
+# Confirm the real start/end dates. Once anything is public, add links.repo
+# (or links.live) and change `status` to `shipped`.
+---
+
+Patient–clinician communication breaks down in predictable places: a symptom described in everyday
+language that maps to several clinical terms, a history that the patient does not know is relevant,
+a follow-up question that never gets asked because the consultation ran out of time.
+
+## Approach
+
+The platform treats those as separable problems and gives each one an agent, rather than asking a
+single model to hold the whole conversation.
+
+- **LoRA-PEFT tuning** adapts a base model to medical phrasing without the cost — or the
+  overfitting risk — of full fine-tuning on a small clinical corpus.
+- **Multi-agent coordination** splits intake, clarification, and summarisation, so each step has a
+  bounded job and a checkable output instead of one opaque generation.
+- **Audio understanding** lets a patient describe a symptom out loud, which is both faster and more
+  accurate than asking them to select from a list of terms they may not recognise.
+
+## Design constraint
+
+Everything the platform generates is addressed to a clinician or reviewed by one. That is a
+deliberate boundary: the system routes, structures, and summarises information, and does not
+deliver a conclusion to a patient on its own.

@@ -1,0 +1,98 @@
+---
+/**
+ * VerifyLink — the proof attached to an achievement or a certification.
+ *
+ * §4.5 blocks the build on a `kind: 'certification'` with neither a
+ * `verification` URL nor a `credentialId`, on the grounds that an unverifiable
+ * credential is a claim, not a credential. This component is the rendering half
+ * of that rule, and it distinguishes the two cases honestly:
+ *
+ *   - `verification` is a URL → a real link the reader can follow.
+ *   - `credentialId` alone → the ID as copyable mono text, and NOT a link,
+ *     because there is nowhere to send them. Styling it like a link would
+ *     recreate the dead-control defect the schema rule exists to prevent.
+ *
+ * When both exist the link wins and the ID is shown beside it, since the ID is
+ * what a reader needs if the issuer ever reorganises its URLs.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '../primitives/Icon.astro';
+
+interface Props extends HTMLAttributes<'div'> {
+  verification?: string;
+  credentialId?: string;
+  /** Named in the accessible label so a page of these is not "verify ×6". */
+  subject?: string;
+}
+
+const { verification, credentialId, subject, class: className, ...rest } = Astro.props;
+---
+
+{
+  (verification || credentialId) && (
+    <div class:list={['verify', className]} {...rest}>
+      {verification && (
+        <a
+          href={verification}
+          class="link"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={subject ? `Verify ${subject}` : undefined}
+        >
+          <Icon name="badge-check" size="0.875rem" />
+          Verify
+          <span class="sr-only">(opens in a new tab)</span>
+        </a>
+      )}
+
+      {credentialId && (
+        <span class="credential">
+          <span class="sr-only">Credential ID: </span>
+          <span aria-hidden="true">ID</span>
+          <code>{credentialId}</code>
+        </span>
+      )}
+    </div>
+  )
+}
+
+<style>
+  .verify {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.875rem;
+    font-size: var(--fs-xs);
+  }
+
+  .link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    /* Comfortable target without a 44px-tall row inside a card footer. */
+    padding-block: 0.375rem;
+    color: var(--accent);
+    border-radius: var(--radius-xs);
+  }
+
+  .link:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  .credential {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--ink-3);
+    font-family: var(--ff-mono);
+    letter-spacing: var(--tracking-caps);
+  }
+
+  .credential code {
+    letter-spacing: normal;
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+</style>

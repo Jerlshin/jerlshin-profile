@@ -1,0 +1,103 @@
+---
+/**
+ * MetricGrid — the headline numbers for a paper or a project.
+ *
+ * `value` is a string in the schema (§4.1), not a number, and that is the whole
+ * design: "63%", "5×", and "SOTA" are all legitimate results and a numeric type
+ * would force the last one to be faked or dropped. Nothing here computes,
+ * formats, or rounds — it renders what the content says.
+ *
+ * Semantically a description list: each metric is a term and its definition,
+ * so a screen reader reads "PH2 dataset, SOTA" as a pair rather than as two
+ * unrelated fragments in a grid.
+ */
+import type { CollectionEntry } from 'astro:content';
+import type { HTMLAttributes } from 'astro/types';
+
+type Metric = CollectionEntry<'projects'>['data']['metrics'][number];
+
+interface Props extends HTMLAttributes<'dl'> {
+  metrics: Metric[];
+  /** Accessible name — "Results", "Impact", whatever the section calls them. */
+  label?: string;
+  size?: 'sm' | 'md';
+}
+
+const { metrics, label = 'Key results', size = 'md', class: className, ...rest } = Astro.props;
+---
+
+{
+  metrics.length > 0 && (
+    <dl class:list={['grid', `size-${size}`, className]} aria-label={label} {...rest}>
+      {metrics.map((m) => (
+        <div class="metric">
+          {/* Value first visually, term first in the DOM: <dt> must precede
+              <dd> to be a valid pair, and `order` handles the presentation. */}
+          <dt class="label">{m.label}</dt>
+          <dd class="value">{m.value}</dd>
+          {m.detail && <dd class="detail">{m.detail}</dd>}
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+<style>
+  .grid {
+    display: grid;
+    /* auto-fit rather than a fixed column count: three metrics fill the row,
+       one metric does not stretch to 100% and look like a banner. */
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 1px;
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background-color: var(--line);
+    overflow: hidden;
+  }
+
+  .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem 1.125rem;
+    background-color: var(--surface);
+  }
+
+  .label {
+    order: 2;
+    color: var(--ink-3);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    font-family: var(--ff-mono);
+  }
+
+  .value {
+    order: 1;
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--ff-display);
+    font-size: var(--fs-2xl);
+    font-weight: 600;
+    line-height: var(--lh-tight);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .detail {
+    order: 3;
+    margin: 0;
+    color: var(--ink-3);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    text-wrap: pretty;
+  }
+
+  .size-sm .value {
+    font-size: var(--fs-xl);
+  }
+
+  .size-sm .metric {
+    padding: 0.75rem 0.875rem;
+  }
+</style>

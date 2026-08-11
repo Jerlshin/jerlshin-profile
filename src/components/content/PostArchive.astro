@@ -1,0 +1,119 @@
+---
+/**
+ * PostArchive — the shared body of every blog listing: /blog, /blog/page/N, and
+ * /blog/tags/<tag>.
+ *
+ * It exists because those three routes have to render the same archive, and
+ * three copies of the same forty lines is how two of them end up with a
+ * different page size, a different empty state, or a filter wired to the wrong
+ * grid id. One component, three thin routes.
+ *
+ * Pagination is rendered only when `last > 1`, and the tag filter only when
+ * there are facets to filter by — an archive of four posts should not carry
+ * navigation for an archive of forty.
+ */
+import type { CollectionEntry } from 'astro:content';
+import ArchiveLayout from '../../layouts/ArchiveLayout.astro';
+import type { Crumb } from '../chrome/Breadcrumbs.astro';
+import PostCard from './PostCard.astro';
+import TagFilter from './TagFilter.astro';
+import Pagination from './Pagination.astro';
+import EmptyState from './EmptyState.astro';
+import type { TagFacet } from '../../lib/tags.ts';
+import { blogTagHref } from '../../lib/tags.ts';
+
+interface Props {
+  /** The posts on THIS page. */
+  posts: CollectionEntry<'blog'>[];
+  /** Total across every page, for the header count. */
+  total: number;
+  title: string;
+  heading?: string;
+  eyebrow?: string;
+  description: string;
+  lede?: string;
+  crumbs?: Crumb[];
+  /** Facets for the in-page filter. Omit to render no filter. */
+  facets?: TagFacet[];
+  /** The tag archive being viewed, so its chip on each card reads as current. */
+  currentTag?: string;
+  current?: number;
+  last?: number;
+  hrefFor?: (n: number) => string;
+  noindex?: boolean;
+}
+
+const GRID_ID = 'blog-grid';
+const EMPTY_ID = 'blog-empty';
+
+const {
+  posts,
+  total,
+  title,
+  heading,
+  eyebrow = 'Writing',
+  description,
+  lede,
+  crumbs,
+  facets,
+  currentTag,
+  current = 1,
+  last = 1,
+  hrefFor,
+  noindex,
+} = Astro.props;
+---
+
+<ArchiveLayout
+  {title}
+  {heading}
+  {eyebrow}
+  {description}
+  {lede}
+  {crumbs}
+  {noindex}
+  gridId={GRID_ID}
+  columns={2}
+  count={total}
+  countLabel={total === 1 ? 'post' : 'posts'}
+>
+  {
+    facets && facets.length > 0 && (
+      <TagFilter
+        slot="filter"
+        facets={facets}
+        label="Filter by tag"
+        target={GRID_ID}
+        emptyId={EMPTY_ID}
+        linkFor={blogTagHref}
+      />
+    )
+  }
+
+  {posts.map((post) => <PostCard post={post} currentTag={currentTag} level={2} />)}
+
+  {
+    posts.length === 0 ? (
+      <EmptyState
+        class="archive-empty"
+        title="Nothing published here yet"
+        body="Posts live in src/content/blog/<year>/<slug>/index.mdx."
+        icon="pen-line"
+      />
+    ) : (
+      <EmptyState
+        id={EMPTY_ID}
+        class="archive-empty"
+        hidden
+        title="No posts match those tags"
+        body="Selecting more tags narrows the results. Clear one to widen them again."
+      />
+    )
+  }
+
+  {
+    last > 1 && hrefFor && (
+      <Pagination slot="after" current={current} last={last} hrefFor={hrefFor} />
+    )
+  }
+</ArchiveLayout>

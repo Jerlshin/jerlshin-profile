@@ -1,0 +1,121 @@
+---
+/**
+ * SectionHeader — eyebrow, heading, lede, and an optional trailing action.
+ *
+ * `level` exists because heading rank is a document-structure decision, not a
+ * size decision: an archive page's section heading is an <h2> under the page
+ * <h1>, while the same visual treatment on a detail page might be an <h3>.
+ * Size comes from `size`, rank from `level`, and the two are independent —
+ * conflating them is how sites end up with three <h1>s or a skipped level.
+ *
+ * The `lede` slot is where §5.8's six hardcoded section subtitles land.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
+  title: string;
+  /** Small mono label above the heading. */
+  eyebrow?: string;
+  /** One-line description under the heading. */
+  lede?: string;
+  /** Semantic heading rank. */
+  level?: 1 | 2 | 3 | 4;
+  /** Visual size, independent of rank. */
+  size?: 'sm' | 'md' | 'lg';
+  /** Give the heading an id so a Section can point aria-labelledby at it. */
+  id?: string;
+  align?: 'start' | 'center';
+}
+
+const {
+  title,
+  eyebrow,
+  lede,
+  level = 2,
+  size = 'md',
+  id,
+  align = 'start',
+  class: className,
+  ...rest
+} = Astro.props;
+
+const Heading = `h${level}` as const;
+const hasAction = Astro.slots.has('action');
+---
+
+<div class:list={['header', `align-${align}`, { 'has-action': hasAction }, className]} {...rest}>
+  <div class="text">
+    {eyebrow && <p class="overline eyebrow">{eyebrow}</p>}
+    <Heading id={id} class:list={['title', `size-${size}`]}>{title}</Heading>
+    {lede && <p class="lede">{lede}</p>}
+    <slot />
+  </div>
+  {
+    hasAction && (
+      <div class="action">
+        <slot name="action" />
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-block-end: var(--space-block);
+  }
+
+  .text {
+    min-inline-size: 0;
+  }
+
+  .eyebrow {
+    margin-block-end: 0.5rem;
+  }
+
+  .title {
+    margin: 0;
+  }
+
+  .size-sm {
+    font-size: var(--fs-lg);
+  }
+
+  .size-md {
+    font-size: var(--fs-2xl);
+  }
+
+  .size-lg {
+    font-size: var(--fs-3xl);
+    line-height: var(--lh-tight);
+  }
+
+  .lede {
+    margin-block-start: 0.5rem;
+    max-inline-size: var(--measure);
+    color: var(--ink-2);
+    font-size: var(--fs-lg);
+    line-height: var(--lh-normal);
+  }
+
+  .action {
+    flex: none;
+  }
+
+  .align-center {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .align-center .text {
+    margin-inline: auto;
+  }
+
+  .align-center .lede {
+    margin-inline: auto;
+  }
+</style>

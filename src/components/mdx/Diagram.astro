@@ -1,0 +1,89 @@
+---
+/**
+ * Diagram — a build-time figure for structure: an architecture sketch, a
+ * pipeline, a state machine.
+ *
+ * Risk #15 in the plan: "if a chart is ever needed, it is a build-time SVG
+ * first". This component is what makes that the path of least resistance. It
+ * takes inline SVG (or any markup) in its slot and renders it at build time —
+ * no runtime charting library, so no hydration and no framework creeping back
+ * onto every page that imports it.
+ *
+ * Accessibility is not optional here, because an SVG with no accessible name is
+ * announced as "graphic" and nothing else:
+ *   - `alt` is REQUIRED and becomes the figure's accessible name;
+ *   - the wrapper is role="img" with aria-label, so the SVG's internals are
+ *     hidden from the accessibility tree rather than read out as a soup of
+ *     stray text nodes;
+ *   - `caption` is separate, and visible to everyone.
+ *
+ * Diagrams are the widest thing in a prose column, so the frame scrolls
+ * horizontally on its own rather than letting the page body scroll (§6.4).
+ */
+interface Props {
+  /** Required. What the diagram shows, as a sentence. */
+  alt: string;
+  caption?: string;
+  /** Minimum width before the frame starts scrolling. */
+  minWidth?: string;
+  /** Tint the frame to separate a line drawing from the page. */
+  tone?: 'plain' | 'surface';
+  class?: string;
+}
+
+const { alt, caption, minWidth = '28rem', tone = 'surface', class: className } = Astro.props;
+---
+
+<figure class:list={['diagram', className]}>
+  <div class:list={['scroller', `tone-${tone}`]} tabindex="0" role="group" aria-label={alt}>
+    {
+      /* tabindex makes an overflowing diagram scrollable by keyboard, which a
+        plain overflow container is not. */
+    }
+    <div class="canvas" style={`--min-w: ${minWidth};`} role="img" aria-label={alt}>
+      <slot />
+    </div>
+  </div>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .diagram {
+    margin-block: 1.75em;
+  }
+
+  .scroller {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+  }
+
+  .tone-surface {
+    background-color: var(--surface-2);
+  }
+
+  .tone-plain {
+    background-color: transparent;
+  }
+
+  .canvas {
+    min-inline-size: var(--min-w);
+    padding: 1.25rem;
+  }
+
+  /* Diagrams are drawn on currentColor and the theme tokens, never on baked-in
+     hex, so the same SVG reads correctly in both themes. */
+  .canvas :global(svg) {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    color: var(--ink-2);
+  }
+
+  .canvas :global(text) {
+    fill: var(--ink);
+    font-family: var(--ff-mono);
+    font-size: 12px;
+  }
+</style>

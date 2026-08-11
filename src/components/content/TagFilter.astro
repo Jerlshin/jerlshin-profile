@@ -1,0 +1,267 @@
+---
+/**
+ * TagFilter — the in-page instant filter (§6.3, layer 2).
+ *
+ * LAYER 1 IS THE SOURCE OF TRUTH. Pre-generated tag routes (/blog/tags/<tag>)
+ * are real HTML files: crawlable, shareable, and working with scripting off.
+ * This control is a convenience layered on top of them, and it is built so that
+ * losing it costs the reader nothing:
+ *
+ *   - It is `hidden` in the markup and revealed by its own script, so a reader
+ *     without JavaScript never sees a control that cannot work — the same
+ *     construction as ThemeToggle and BibtexBlock.
+ *   - It only ever sets the `hidden` property on cards that are already in the
+ *     DOM. It fetches nothing, renders nothing, and cannot leave the archive
+ *     showing less than the server sent if it fails to run.
+ *   - `linkFor` renders each tag as a real <a> to its static archive when one
+ *     exists, so the no-JS fallback below is navigable rather than inert.
+ *
+ * COUNTS ARE BUILD-TIME VALUES. The script never counts anything; `facets()`
+ * computed them during the build and they are baked into the labels, so they
+ * are correct before a single byte of JavaScript has run.
+ *
+ * SEMANTICS ARE "AND". Selecting a second tag narrows the set, never widens it.
+ * OR-filtering reads as broken the moment a reader selects two tags and sees
+ * MORE results than before.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { TagFacet } from '../../lib/tags.ts';
+
+interface Props extends HTMLAttributes<'div'> {
+  facets: TagFacet[];
+  /** Accessible name for the group. */
+  label?: string;
+  /** id of the container whose `[data-tags]` children are filtered. */
+  target: string;
+  /** id of the EmptyState shown when nothing matches. */
+  emptyId: string;
+  /** Static archive URL for a tag, used by the no-JS fallback list. */
+  linkFor?: (tag: string) => string | undefined;
+}
+
+const {
+  facets,
+  label = 'Filter by tag',
+  target,
+  emptyId,
+  linkFor,
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+{
+  facets.length > 0 && (
+    <div class:list={['filter', className]} data-pagefind-ignore {...rest}>
+      {/*
+        Hidden until the script runs. `data-tag-filter` carries the wiring so
+        the script needs no per-page configuration.
+      */}
+      <div
+        class="control"
+        hidden
+        data-tag-filter
+        data-target={target}
+        data-empty={emptyId}
+        role="group"
+        aria-label={label}
+      >
+        <p class="overline heading">{label}</p>
+
+        <div class="chips">
+          <button type="button" class="chip clear" data-clear aria-pressed="true">
+            All
+          </button>
+          {facets.map(({ tag, count }) => (
+            <button type="button" class="chip" data-tag={tag} aria-pressed="false">
+              <span class="name">{tag}</span>
+              <span class="count tabular" aria-hidden="true">
+                {count}
+              </span>
+              <span class="sr-only">{`, ${count} entries`}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Announces the result of a filter action, which is otherwise a purely
+            visual change to a region the reader is not focused on. */}
+        <p class="sr-only" role="status" aria-live="polite" data-status />
+      </div>
+
+      {/*
+        NO-JAVASCRIPT FALLBACK. Real links to the static tag archives, removed
+        by the same script that reveals the control above — so exactly one of
+        the two is ever present, and neither state is a dead end.
+      */}
+      {linkFor && (
+        <nav class="fallback" aria-label={label} data-tag-fallback>
+          <p class="overline heading">{label}</p>
+          <ul class="chips">
+            {facets.map(({ tag, count }) =>
+              linkFor(tag) ? (
+                <li>
+                  <a href={linkFor(tag)} class="chip">
+                    <span class="name">{tag}</span>
+                    <span class="count tabular" aria-hidden="true">
+                      {count}
+                    </span>
+                    <span class="sr-only">{`, ${count} entries`}</span>
+                  </a>
+                </li>
+              ) : null,
+            )}
+          </ul>
+        </nav>
+      )}
+    </div>
+  )
+}
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tag-filter]')) {
+    const scope = document.getElementById(root.dataset.target!);
+    const empty = document.getElementById(root.dataset.empty!);
+    if (!scope) continue;
+
+    const cards = Array.from(scope.querySelectorAll<HTMLElement>('[data-tags]'));
+    const status = root.querySelector<HTMLElement>('[data-status]');
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('button[data-tag]'));
+    const clear = root.querySelector<HTMLButtonElement>('[data-clear]');
+
+    // Deep-linking: /blog?tag=a&tag=b arrives filtered, so a filtered view can
+    // be shared even though it is not its own URL.
+    const active = new Set(new URLSearchParams(location.search).getAll('tag'));
+
+    const apply = () => {
+      let shown = 0;
+      for (const card of cards) {
+        const tags = (card.dataset.tags ?? '').split(' ');
+        // AND semantics: selecting more tags narrows, never widens.
+        const match = active.size === 0 || [...active].every((t) => tags.includes(t));
+        card.hidden = !match;
+        shown += match ? 1 : 0;
+      }
+
+      if (empty) empty.hidden = shown > 0;
+      for (const chip of chips) {
+        chip.setAttribute('aria-pressed', String(active.has(chip.dataset.tag!)));
+      }
+      clear?.setAttribute('aria-pressed', String(active.size === 0));
+      if (status) {
+        status.textContent = `${shown} of ${cards.length} shown${
+          active.size ? ` for ${[...active].join(', ')}` : ''
+        }`;
+      }
+
+      // replaceState, not pushState: one history entry per chip click would
+      // make the back button undo filters one at a time instead of leaving.
+      const qs = [...active].map((t) => `tag=${encodeURIComponent(t)}`).join('&');
+      history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+    };
+
+    for (const chip of chips) {
+      chip.addEventListener('click', () => {
+        const tag = chip.dataset.tag!;
+        active.has(tag) ? active.delete(tag) : active.add(tag);
+        apply();
+      });
+    }
+
+    clear?.addEventListener('click', () => {
+      active.clear();
+      apply();
+    });
+
+    // Swap the fallback links for the live control, then apply any ?tag= state.
+    root.parentElement?.querySelector('[data-tag-fallback]')?.remove();
+    root.hidden = false;
+    apply();
+  }
+</script>
+
+<style>
+  .heading {
+    margin-block-end: 0.5rem;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    /*
+     * NOT COSMETIC — this is what stops the page from scrolling sideways.
+     *
+     * Each chip contains a `.sr-only` span carrying its count for screen
+     * readers, and Tailwind's `.sr-only` is `position: absolute`. An absolutely
+     * positioned element is laid out against its nearest POSITIONED ancestor,
+     * so with none of these boxes positioned, those spans resolve against the
+     * initial containing block — escaping the scroller below and reporting a
+     * static x-position of up to ~1700px. `documentElement.scrollWidth` then
+     * grows to match, and the whole page gets a horizontal scrollbar caused by
+     * text nobody can see. Measured at 360px: 1589px against a 360px viewport.
+     *
+     * Making the scroller itself the containing block keeps them inside it.
+     */
+    position: relative;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    padding: 0.4375rem 0.625rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-2);
+    color: var(--ink-2);
+    font-family: var(--ff-mono);
+    font-size: var(--fs-xs);
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease),
+      background-color var(--dur-fast) var(--ease);
+  }
+
+  .chip:hover {
+    color: var(--accent);
+    border-color: var(--control);
+  }
+
+  .chip[aria-pressed='true'] {
+    color: var(--accent);
+    background-color: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  .clear {
+    font-family: var(--ff-sans);
+    font-weight: 500;
+  }
+
+  .count {
+    color: var(--ink-3);
+    font-size: 0.9em;
+  }
+
+  .chip[aria-pressed='true'] .count {
+    color: var(--accent);
+  }
+
+  /* At 360px the chip row becomes a horizontal scroller rather than four
+     stacked rows that push the archive below the fold (§6.4). */
+  @media (max-width: 40rem) {
+    .chips {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding-block-end: 0.25rem;
+      scrollbar-width: thin;
+    }
+  }
+</style>

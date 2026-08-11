@@ -1,0 +1,185 @@
+---
+/**
+ * SiteFooter — closing chrome.
+ *
+ * Every string here comes from `site.ts`, including the tagline that existed
+ * only as hardcoded JSX at App.jsx:807 (§5.8). Nothing in this component is
+ * literal copy, so nothing in it can drift from the rest of the site.
+ *
+ * `data-pagefind-ignore` keeps the footer out of the search index — otherwise
+ * every page matches a query for the name or the tagline (§6.3).
+ */
+import { site } from '../../config/site.ts';
+import { buildYear } from '../../lib/dates.ts';
+import Container from '../primitives/Container.astro';
+import Icon from '../primitives/Icon.astro';
+
+/** Only the socials that are actually configured. Optional URLs stay optional
+    rather than rendering a dead link (the v1 site shipped one — App.jsx:321). */
+const socials = [
+  { key: 'github', label: 'GitHub', icon: 'github', href: site.socials.github },
+  { key: 'linkedin', label: 'LinkedIn', icon: 'linkedin', href: site.socials.linkedin },
+  { key: 'scholar', label: 'Google Scholar', icon: 'graduation-cap', href: site.socials.scholar },
+  { key: 'orcid', label: 'ORCID', icon: 'badge-check', href: site.socials.orcid },
+  { key: 'arxiv', label: 'arXiv', icon: 'file-text', href: site.socials.arxiv },
+].filter((s): s is typeof s & { href: string } => Boolean(s.href));
+---
+
+<footer class="footer" data-pagefind-ignore>
+  <Container width="shell" class="inner">
+    <div class="lead">
+      <p class="tagline">{site.footerTagline}</p>
+      <p class="where">
+        <Icon name="map-pin" size="0.875rem" />
+        {site.location}
+      </p>
+    </div>
+
+    <nav class="links" aria-label="Footer">
+      <h2 class="overline heading">Explore</h2>
+      <ul class="list">
+        {
+          site.nav.map(({ label, href }) => (
+            <li>
+              <a href={href} class="text-link">
+                {label}
+              </a>
+            </li>
+          ))
+        }
+        <li><a href="/about" class="text-link">About</a></li>
+      </ul>
+    </nav>
+
+    <div class="links">
+      <h2 class="overline heading">Elsewhere</h2>
+      <ul class="list">
+        {
+          socials.map(({ label, icon, href }) => (
+            <li>
+              <a href={href} class="text-link with-icon" rel="me noopener" target="_blank">
+                <Icon name={icon} size="0.9375rem" />
+                {label}
+                <span class="sr-only">(opens in a new tab)</span>
+              </a>
+            </li>
+          ))
+        }
+        <li>
+          <a href={`mailto:${site.email}`} class="text-link with-icon">
+            <Icon name="mail" size="0.9375rem" />
+            Email
+          </a>
+        </li>
+        {
+          site.cv && (
+            <li>
+              <a href={site.cv} class="text-link with-icon" data-astro-prefetch="false">
+                <Icon name="file-down" size="0.9375rem" />
+                CV
+              </a>
+            </li>
+          )
+        }
+      </ul>
+    </div>
+  </Container>
+
+  <Container width="shell" class="baseline">
+    <p class="fine">© {buildYear()} {site.name}</p>
+    <p class="fine colophon">
+      Built with Astro. Set in Source Serif&nbsp;4 and JetBrains&nbsp;Mono.
+    </p>
+  </Container>
+</footer>
+
+<style>
+  .footer {
+    margin-block-start: var(--space-section);
+    border-block-start: 1px solid var(--line);
+    background-color: var(--surface-2);
+  }
+
+  .inner {
+    display: grid;
+    gap: var(--space-block);
+    padding-block: var(--space-block);
+  }
+
+  /* One column on a phone, then the lead paragraph takes the wide track. */
+  @media (min-width: 40rem) {
+    .inner {
+      grid-template-columns: 1.5fr 1fr 1fr;
+      gap: 2rem;
+    }
+  }
+
+  .lead {
+    max-inline-size: 34ch;
+  }
+
+  .tagline {
+    font-family: var(--ff-display);
+    font-size: var(--fs-lg);
+    line-height: var(--lh-snug);
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+
+  .where {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-block-start: 0.75rem;
+    font-size: var(--fs-sm);
+    color: var(--ink-3);
+  }
+
+  .heading {
+    margin-block-end: 0.75rem;
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .text-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* Keeps footer links at a comfortable target without a 44px-tall list. */
+    padding-block: 0.4375rem;
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+    border-radius: var(--radius-xs);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .text-link:hover {
+    color: var(--accent);
+  }
+
+  .baseline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    padding-block: 1rem;
+    border-block-start: 1px solid var(--line);
+  }
+
+  .fine {
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+  }
+
+  .colophon {
+    font-family: var(--ff-mono);
+  }
+</style>

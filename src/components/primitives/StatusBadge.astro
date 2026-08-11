@@ -1,0 +1,111 @@
+---
+/**
+ * StatusBadge — renders a `status` enum from the content schemas.
+ *
+ * The status types are read straight off the generated collection types, and
+ * the lookup below is a `Record<Status, …>`. Adding a value to either enum in
+ * content.config.ts without adding it here is therefore a TYPE ERROR, caught by
+ * `astro check`, not a badge that silently renders blank.
+ *
+ * Colour never carries the meaning on its own (WCAG 1.4.1): the label is always
+ * present, and the dot is decoration on top of it.
+ */
+import type { CollectionEntry } from 'astro:content';
+import type { HTMLAttributes } from 'astro/types';
+
+type ResearchStatus = CollectionEntry<'research'>['data']['status'];
+type ProjectStatus = CollectionEntry<'projects'>['data']['status'];
+type Status = ResearchStatus | ProjectStatus;
+
+type Tone = 'ok' | 'warn' | 'info' | 'neutral' | 'accent';
+
+interface Props extends HTMLAttributes<'span'> {
+  status: Status;
+  size?: 'sm' | 'md';
+  /** Hide the dot when the badge sits in a dense metadata row. */
+  dot?: boolean;
+}
+
+const STATUS: Record<Status, { label: string; tone: Tone }> = {
+  // research
+  published: { label: 'Published', tone: 'ok' },
+  accepted: { label: 'Accepted', tone: 'ok' },
+  'under-review': { label: 'Under review', tone: 'warn' },
+  preprint: { label: 'Preprint', tone: 'info' },
+  'in-preparation': { label: 'In preparation', tone: 'neutral' },
+  // projects
+  active: { label: 'Active', tone: 'accent' },
+  shipped: { label: 'Shipped', tone: 'ok' },
+  prototype: { label: 'Prototype', tone: 'info' },
+  archived: { label: 'Archived', tone: 'neutral' },
+};
+
+// `...rest` also carries a parent component's scope attribute — see Nav.astro.
+const { status, size = 'sm', dot = true, class: className, ...rest } = Astro.props;
+const { label, tone } = STATUS[status];
+---
+
+<span
+  class:list={['badge', `tone-${tone}`, `size-${size}`, className]}
+  data-status={status}
+  data-pagefind-filter="status"
+  {...rest}
+>
+  {dot && <span class="dot" aria-hidden="true" />}
+  {label}
+</span>
+
+<style>
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    border-radius: var(--radius-full);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .size-sm {
+    padding: 0.3125rem 0.625rem;
+  }
+
+  .size-md {
+    padding: 0.4375rem 0.8125rem;
+    font-size: var(--fs-sm);
+  }
+
+  .dot {
+    inline-size: 0.375rem;
+    block-size: 0.375rem;
+    border-radius: 50%;
+    background-color: currentColor;
+    flex: none;
+  }
+
+  .tone-ok {
+    color: var(--ok);
+    background-color: var(--ok-soft);
+  }
+
+  .tone-warn {
+    color: var(--warn);
+    background-color: var(--warn-soft);
+  }
+
+  .tone-info {
+    color: var(--info);
+    background-color: var(--info-soft);
+  }
+
+  .tone-neutral {
+    color: var(--neutral);
+    background-color: var(--neutral-soft);
+  }
+
+  .tone-accent {
+    color: var(--accent);
+    background-color: var(--accent-soft);
+  }
+</style>

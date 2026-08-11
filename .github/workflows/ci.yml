@@ -1,0 +1,81 @@
+# CI — the guard that keeps schema violations out of `main` (§7 Phase 7).
+#
+# `astro check` is the important half. This site's premise is that content
+# errors become build errors (§1.1): a paper with no abstract, an image with no
+# alt text, a published paper with no DOI, a tag that is not kebab-case. Those
+# are Zod refinements in src/content.config.ts, and they only fire when
+# something actually builds the content layer. A pull request that is not built
+# is a pull request where every one of those guarantees is switched off.
+#
+# `npm run check` also runs scripts/check-contrast.mjs, so a token change that
+# would ship an unreadable palette fails here too.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  # So a failure can be re-run without an empty commit.
+  workflow_dispatch:
+
+# A new push to the same PR makes the previous run's answer irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: astro check && astro build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          # Astro 7 requires 22.12+. Pinned to a major rather than `latest` so a
+          # Node release cannot break the build on a day nobody touched the repo.
+          node-version: '22'
+          cache: npm
+
+      # `npm ci` and not `npm install`: it installs exactly the lockfile, so CI
+      # cannot pass against a dependency tree that no one has committed.
+      - run: npm ci
+
+      # Runs sync:katex, then `astro check` + the contrast script, then the
+      # build — the same command Vercel runs, so a green check here means the
+      # deploy will not fail for a reason CI could have caught.
+      - run: npm run build
+
+      # THE FREE-TIER GUARD (risk #10). `output: 'static'` with no adapter must
+      # produce files and nothing else. Adding an adapter, or a single
+      # `export const prerender = false`, silently converts the site to
+      # on-demand rendering and starts billing functions. This is one line and
+      # it fails the PR that would do it.
+      - name: Assert the build produced zero functions
+        run: |
+          if [ -d ".vercel/output/functions" ] || [ -d "dist/_functions" ] || [ -d "dist/.vercel" ]; then
+            echo "::error::Build emitted serverless/edge functions. This site must stay fully static (§7.3)."
+            exit 1
+          fi
+          echo "No function output — the build is pure static files."
+
+      # Pagefind runs as the final build step and writes dist/pagefind/. If it
+      # silently stopped running, search would break with no other symptom —
+      # exactly the failure class in §1.2.
+      - name: Assert the search index was written
+        run: test -f dist/pagefind/pagefind.js || { echo "::error::dist/pagefind/ missing — the Pagefind step did not run."; exit 1; }
+
+      # Every page's social card is a real PNG in dist/og/ (§2.6). A card that
+      # failed to render is invisible until someone shares a link.
+      - name: Assert social cards were rendered
+        run: test -f dist/og/default.png || { echo "::error::dist/og/default.png missing — OG image generation did not run."; exit 1; }
+
+      - name: Check formatting
+        run: npx prettier --check .

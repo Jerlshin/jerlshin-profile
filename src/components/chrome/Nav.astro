@@ -1,0 +1,124 @@
+---
+/**
+ * Nav — the primary navigation, from `site.nav`.
+ *
+ * These are REAL links to real routes, not the scroll anchors the v1 SPA used.
+ * That is the whole point of having routes: /research is a page that can be
+ * linked, indexed, and shared, rather than a fragment of one document.
+ *
+ * The active item is computed from the URL at build time, so `aria-current`
+ * costs no JavaScript and is correct even with scripting disabled.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { site } from '../../config/site.ts';
+
+interface Props extends HTMLAttributes<'nav'> {
+  /** `bar` = horizontal header nav. `stack` = vertical, inside the drawer. */
+  variant?: 'bar' | 'stack';
+}
+
+/**
+ * `...rest` is load-bearing, not boilerplate. Astro implements "a parent's
+ * scoped styles reach a child component's root element" by passing the parent's
+ * data-astro-cid-* down as a prop — which only lands on the DOM if the child
+ * spreads it. Without the spread, SiteHeader's `.desktop-nav { display: none }`
+ * silently fails to match and the full nav renders at 360px.
+ */
+const { variant = 'bar', class: className, ...rest } = Astro.props;
+
+const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+
+/** A section is current for its index page and every page beneath it. */
+const isCurrent = (href: string) => path === href || path.startsWith(`${href}/`);
+---
+
+<nav aria-label="Primary" class:list={['nav', `variant-${variant}`, className]} {...rest}>
+  <ul class="list">
+    {
+      site.nav.map(({ label, href }) => (
+        <li>
+          <a href={href} class="item" aria-current={isCurrent(href) ? 'page' : undefined}>
+            {label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<style>
+  .list {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .item:hover {
+    color: var(--ink);
+  }
+
+  /* Accent marks state, never decoration (§6.4). */
+  .item[aria-current='page'] {
+    color: var(--accent);
+  }
+
+  /* --- Header bar ------------------------------------------------------- */
+
+  .variant-bar .list {
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .variant-bar .item {
+    position: relative;
+    padding: 0.5rem 0.75rem;
+    min-block-size: var(--tap);
+  }
+
+  /* The underline is drawn on a pseudo-element that is always present and
+     merely transparent, so the item's box never changes size between states
+     and the bar cannot shift by a pixel when you navigate. */
+  .variant-bar .item::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0.75rem;
+    inset-block-end: 0.5rem;
+    block-size: 2px;
+    border-radius: 1px;
+    background-color: transparent;
+    transition: background-color var(--dur-fast) var(--ease);
+  }
+
+  .variant-bar .item[aria-current='page']::after {
+    background-color: var(--accent);
+  }
+
+  /* --- Drawer stack ----------------------------------------------------- */
+
+  .variant-stack .list {
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .variant-stack .item {
+    padding: 0.875rem 1rem;
+    min-block-size: var(--tap);
+    font-size: var(--fs-lg);
+    font-family: var(--ff-display);
+  }
+
+  .variant-stack .item[aria-current='page'] {
+    background-color: var(--accent-soft);
+  }
+</style>

@@ -1,0 +1,54 @@
+---
+title: 'Graph-Based Multi-Task Learning for Medical Image Analysis'
+summary: 'An interpretable multi-task framework for skin lesion diagnosis built on superpixel graph representations, reported state-of-the-art on the PH2 dataset.'
+category: 'research'
+# `prototype`, not `shipped`: content.config.ts refuses a `shipped` project with
+# no links.repo or links.live, and it is right to. Publish the code, add the
+# link, then change this one word.
+status: 'prototype'
+start: 2024-01-01
+end: null
+stack: ['Swin Transformers', 'GATs', 'GNNExplainer']
+tags: ['graph-neural-networks', 'medical-imaging', 'multi-task-learning']
+metrics:
+  - label: 'PH2 dataset'
+    value: 'SOTA'
+    detail: 'Reported in the accompanying manuscript, under review at IEEE Access'
+related:
+  - 'superpixel-graph-skin-lesion'
+featured: true
+order: 1
+
+# ── CONTENT STATUS ────────────────────────────────────────────────────────
+# Confirm the real start/end dates. Once the code is public, add links.repo
+# (or links.live) and change `status` to `shipped`.
+---
+
+Skin lesion diagnosis is one of the settings where an accurate model is not automatically a useful
+one. A dermatologist asked to act on a prediction needs to see which part of the lesion drove it,
+described in the same terms they would use themselves — border irregularity, pigment network,
+colour variegation — not as a heat map over pixels.
+
+## Approach
+
+The implementation replaces the dense pixel grid with a **superpixel graph**: the image is
+over-segmented into perceptually coherent regions, each region becomes a node, and edges encode
+spatial adjacency together with appearance similarity.
+
+- **Swin Transformer** features supply the per-node representation, so each superpixel carries
+  hierarchical context rather than raw colour statistics.
+- **Graph attention networks** propagate across the lesion, learning which neighbouring regions
+  inform a given one.
+- **GNNExplainer** attributes a prediction back to a subgraph — a set of regions and the edges
+  between them, which is directly renderable over the original image.
+- The head is **multi-task**: diagnostic label and dermoscopic attributes are predicted jointly, so
+  the shared representation is pulled toward features clinicians independently report.
+
+## Why the representation choice matters
+
+Attribution over superpixels is not a nicer visualisation of the same thing. Because the graph is
+the unit the model actually computes over, an explanation is a statement about the computation
+rather than a reconstruction after the fact — which is the usual failure mode of post-hoc saliency
+on medical images.
+
+The research write-up is [Seeing the Skin Deeper](/research/superpixel-graph-skin-lesion).

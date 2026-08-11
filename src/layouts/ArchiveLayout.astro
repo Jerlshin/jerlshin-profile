@@ -1,0 +1,228 @@
+---
+/**
+ * ArchiveLayout — the L2 index pages: /research, /projects, /blog, /experience,
+ * /achievements, and the tag archives.
+ *
+ * Four named slots, in the order they appear, so every archive on the site has
+ * the same anatomy and a reader learns it once:
+ *
+ *   head    → extra <head> content
+ *   filter  → TagFilter, or nothing
+ *   default → the grid of cards
+ *   after   → pagination, or a footnote
+ *
+ * SEARCH INDEXING IS OPT-IN, VIA `searchKind` (§6.3).
+ *
+ * Pagefind indexes one record per page. An archive of cards and the detail
+ * pages those cards link to contain the same titles and the same summaries, so
+ * indexing both means every query returns each item twice — once usefully, and
+ * once pointing at a list. Archives that are merely an index of somewhere else
+ * (/research, /projects, /blog, the tag routes) therefore set no `searchKind`
+ * and produce no record at all; the detail pages carry the content.
+ *
+ * Archives that ARE the item list — /experience and /achievements have no
+ * detail pages, the archive is the only place those facts exist — pass a
+ * `searchKind` and become their own record. Getting this backwards is invisible
+ * until someone searches, which is why it is a required decision at the call
+ * site rather than a default.
+ *
+ * The grid carries the id that TagFilter targets. That wiring is a prop rather
+ * than a hardcoded string because a page can host two independent grids, and
+ * two elements sharing an id is the kind of bug that only shows up as "the
+ * filter stopped working on one section".
+ */
+import BaseLayout from './BaseLayout.astro';
+import Container from '../components/primitives/Container.astro';
+import Breadcrumbs, { type Crumb } from '../components/chrome/Breadcrumbs.astro';
+import type { KindLabel } from '../lib/kinds.ts';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Page heading, when it should differ from the <title>. */
+  heading?: string;
+  eyebrow?: string;
+  /** The §5.8 section subtitle — the copy that only existed in App.jsx. */
+  lede?: string;
+  crumbs?: Crumb[];
+  /** id given to the card grid; TagFilter's `target`. */
+  gridId?: string;
+  /** 1 opts out of the grid ladder entirely — the timeline and tag archives. */
+  columns?: 1 | 2 | 3;
+  /** Number of items, used only to describe the archive to assistive tech. */
+  count?: number;
+  countLabel?: string;
+  /**
+   * Set only on an archive that is the sole home of its content. Unset, the
+   * page produces no Pagefind record — see the note at the top of this file.
+   */
+  searchKind?: KindLabel;
+  image?: string;
+  imageAlt?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  heading,
+  eyebrow,
+  lede,
+  crumbs,
+  gridId = 'archive-grid',
+  columns = 3,
+  count,
+  countLabel = 'entries',
+  searchKind,
+  image,
+  imageAlt,
+  noindex,
+} = Astro.props;
+
+const hasFilter = Astro.slots.has('filter');
+const hasAfter = Astro.slots.has('after');
+---
+
+<BaseLayout {title} {description} {image} {imageAlt} {noindex}>
+  <slot name="head" slot="head" />
+
+  <Container width="shell" class="archive">
+    {crumbs && crumbs.length > 0 && <Breadcrumbs items={crumbs} class="crumbs" />}
+
+    {
+      /*
+       * The indexed region — when there is one — spans the header, the grid,
+       * and the `after` slot, not the grid alone. Pagefind reads a record's
+       * title from the first <h1> inside the region, so an attribute on the
+       * grid by itself produces a record with no title. `after` is included
+       * because on /experience it holds the education and skills sections,
+       * which are content rather than chrome; the pagination and filter it
+       * holds elsewhere carry their own `data-pagefind-ignore`.
+       */
+    }
+    <div
+      data-pagefind-body={searchKind ? true : undefined}
+      data-pagefind-meta={searchKind ? `kind:${searchKind}` : undefined}
+      data-pagefind-filter={searchKind ? `kind:${searchKind}` : undefined}
+    >
+      <header class="head">
+        {eyebrow && <p class="overline">{eyebrow}</p>}
+        <h1 class="title">{heading ?? title}</h1>
+        {lede && <p class="lede">{lede}</p>}
+        {
+          count !== undefined && (
+            <p class="count tabular">
+              {count} {countLabel}
+            </p>
+          )
+        }
+      </header>
+
+      {
+        hasFilter && (
+          <div class="filter">
+            <slot name="filter" />
+          </div>
+        )
+      }
+
+      {
+        /* No ARIA role: the children are <article> cards, and role="list" would
+          promise listitem children that do not exist. */
+      }
+      <div id={gridId} class:list={['grid', `cols-${columns}`]}>
+        <slot />
+      </div>
+
+      {
+        hasAfter && (
+          <div class="after">
+            <slot name="after" />
+          </div>
+        )
+      }
+    </div>
+  </Container>
+</BaseLayout>
+
+<style>
+  .archive {
+    padding-block: var(--space-section);
+  }
+
+  .crumbs {
+    margin-block-end: var(--space-block);
+  }
+
+  .head {
+    margin-block-end: var(--space-block);
+  }
+
+  .title {
+    margin-block-start: 0.5rem;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin-block-start: 0.875rem;
+    max-inline-size: var(--measure);
+    color: var(--ink-2);
+    font-size: var(--fs-lg);
+    line-height: var(--lh-prose);
+    text-wrap: pretty;
+  }
+
+  .count {
+    margin-block-start: 0.75rem;
+    color: var(--ink-3);
+    font-family: var(--ff-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+  }
+
+  .filter {
+    margin-block-end: var(--space-block);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  /* §6.4's ladder: 1 column below 640px, 2 to 1024px, then 2–3.
+     `cols-1` opts out entirely — it is what the timeline and the single-column
+     archives use, and it must stay one column at every width. */
+  @media (min-width: 40rem) {
+    .cols-2,
+    .cols-3 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .cols-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* A single-column archive is long-form: hold it to the reading measure
+     instead of letting rows run to 1440px (§6.4). */
+  .cols-1 {
+    max-inline-size: var(--content-max);
+  }
+
+  /* The empty state is a sibling of the cards, not a replacement for the grid —
+     TagFilter toggles it in place while the cards stay in the DOM — so it has
+     to span every column instead of sitting in the first one. `:global`
+     because the element belongs to EmptyState, not to this layout. */
+  .grid > :global(.archive-empty) {
+    grid-column: 1 / -1;
+  }
+
+  .after {
+    margin-block-start: var(--space-block);
+  }
+</style>

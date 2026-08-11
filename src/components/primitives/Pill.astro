@@ -1,0 +1,67 @@
+---
+/**
+ * Pill — a small non-taxonomy label: a stack entry ("PyTorch"), a venue kind
+ * ("Journal"), a role ("Lead, 4-person team").
+ *
+ * Distinct from Tag by intent, not by looks. Tag is a slug that filters and
+ * routes; Pill is display text that does neither. Keeping them separate stops
+ * "PyTorch" from ever being mistaken for a `/tags/pytorch` link.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'span'> {
+  tone?: 'neutral' | 'accent' | 'outline';
+  size?: 'sm' | 'md';
+  /** Renders text in the mono face — for identifiers, versions, counts. */
+  mono?: boolean;
+}
+
+const { tone = 'neutral', size = 'sm', mono = false, class: className, ...rest } = Astro.props;
+---
+
+<span class:list={['pill', `tone-${tone}`, `size-${size}`, { mono }, className]} {...rest}>
+  <slot />
+</span>
+
+<style>
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: var(--radius-full);
+    line-height: 1;
+    white-space: nowrap;
+    font-size: var(--fs-xs);
+  }
+
+  .size-sm {
+    padding: 0.3125rem 0.625rem;
+  }
+
+  .size-md {
+    padding: 0.4375rem 0.8125rem;
+    font-size: var(--fs-sm);
+  }
+
+  .mono {
+    font-family: var(--ff-mono);
+  }
+
+  .tone-neutral {
+    color: var(--ink-2);
+    background-color: var(--neutral-soft);
+    border: 1px solid transparent;
+  }
+
+  .tone-accent {
+    color: var(--accent);
+    background-color: var(--accent-soft);
+    border: 1px solid transparent;
+  }
+
+  .tone-outline {
+    color: var(--ink-2);
+    background-color: transparent;
+    border: 1px solid var(--line-strong);
+  }
+</style>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="JG">
+  <!-- Fixed colours on purpose: a favicon is composited by the browser chrome,
+       not by the page, so it cannot read the site's theme tokens. The accent
+       ground keeps it legible on both light and dark tab strips. -->
+  <rect width="32" height="32" rx="7" fill="#0f5b8f" />
+  <text
+    x="16"
+    y="22"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="16"
+    font-weight="600"
+    fill="#ffffff"
+    text-anchor="middle"
+  >JG</text>
+</svg>

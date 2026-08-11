@@ -1,0 +1,108 @@
+---
+/**
+ * PaperMeta — the metadata block under a paper's title: byline, venue, status,
+ * date, and the artefact links.
+ *
+ * THE LINK ROW IS DERIVED, NOT HAND-LISTED. It maps over the `links` object in
+ * the schema, so a link type that exists in the data always renders and one
+ * that does not is simply absent. The v1 site shipped an ExternalLink icon that
+ * pointed nowhere (App.jsx:321) — a control that lies about being a control.
+ * There is no way to produce that here: no URL, no button.
+ *
+ * `data-pagefind-meta` feeds the search result cards in Phase 6 (§6.3), and is
+ * set here rather than on the page so every paper carries it identically.
+ */
+import type { CollectionEntry } from 'astro:content';
+import AuthorList from './AuthorList.astro';
+import VenueLine from './VenueLine.astro';
+import StatusBadge from '../primitives/StatusBadge.astro';
+import Btn from '../primitives/Btn.astro';
+import { formatDate, isoDate } from '../../lib/dates.ts';
+
+interface Props {
+  data: CollectionEntry<'research'>['data'];
+  class?: string;
+}
+
+const { data, class: className } = Astro.props;
+
+/**
+ * Declared once, in the order a reader wants them: the canonical record first,
+ * then things to run, then things to read or watch. `external` is false for the
+ * three that are served from this origin (public/), so they do not claim to
+ * open a new tab when they do not.
+ */
+const LINKS = [
+  { key: 'doi', label: 'DOI', icon: 'link', external: true },
+  { key: 'arxiv', label: 'arXiv', icon: 'file-text', external: true },
+  { key: 'pdf', label: 'PDF', icon: 'file-down', external: false },
+  { key: 'code', label: 'Code', icon: 'code', external: true },
+  { key: 'dataset', label: 'Dataset', icon: 'database', external: true },
+  { key: 'slides', label: 'Slides', icon: 'presentation', external: false },
+  { key: 'poster', label: 'Poster', icon: 'image', external: false },
+  { key: 'video', label: 'Video', icon: 'play', external: true },
+] as const;
+
+const links = LINKS.map((l) => ({ ...l, href: data.links[l.key] })).filter(
+  (l): l is typeof l & { href: string } => Boolean(l.href),
+);
+---
+
+<div class:list={['meta', className]}>
+  <AuthorList authors={data.authors} truncated={data.authorsTruncated} />
+
+  <div class="line">
+    <VenueLine venue={data.venue} size="md" />
+    <StatusBadge status={data.status} />
+  </div>
+
+  <p class="dateline">
+    <time datetime={isoDate(data.date)} data-pagefind-meta={`date:${isoDate(data.date)}`}>
+      {formatDate(data.date)}
+    </time>
+  </p>
+
+  {
+    links.length > 0 && (
+      <ul class="links" aria-label="Paper resources">
+        {links.map(({ key, label, icon, external, href }) => (
+          <li>
+            <Btn href={href} size="sm" iconStart={icon} external={external} data-link={key}>
+              {label}
+            </Btn>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</div>
+
+<style>
+  .meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.875rem;
+  }
+
+  .dateline {
+    font-size: var(--fs-sm);
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0.375rem 0 0;
+    padding: 0;
+  }
+</style>

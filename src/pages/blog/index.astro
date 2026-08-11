@@ -1,0 +1,34 @@
+---
+/**
+ * /blog — page 1 of the archive.
+ *
+ * Page 1 lives here rather than at /blog/page/1 so there is exactly one URL for
+ * this list. `blogPageUrl` in lib/collections.ts is what keeps this route and
+ * /blog/page/[page] agreeing about that.
+ */
+import PostArchive from '../../components/content/PostArchive.astro';
+import { posts, POSTS_PER_PAGE, blogPageUrl } from '../../lib/collections.ts';
+import { facets } from '../../lib/tags.ts';
+
+const all = await posts();
+// Facets describe the WHOLE archive, not just this page: a count of 7 that
+// becomes 2 when you turn the page is worse than no count at all.
+const tagFacets = facets(all, (t) => `/blog/tags/${t}`);
+
+const last = Math.max(1, Math.ceil(all.length / POSTS_PER_PAGE));
+const page = all.slice(0, POSTS_PER_PAGE);
+---
+
+<PostArchive
+  posts={page}
+  total={all.length}
+  title="Blog"
+  heading="Blog"
+  description="Notes on multimodal learning, physiological signal processing, graph representations, and the engineering around them."
+  lede="Working notes on multimodal learning, signal processing, and the engineering that makes research reproducible."
+  crumbs={[{ label: 'Blog' }]}
+  facets={tagFacets}
+  current={1}
+  last={last}
+  hrefFor={blogPageUrl}
+/>

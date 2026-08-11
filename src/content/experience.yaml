@@ -1,0 +1,60 @@
+- id: 'augsburg-dl-researcher'
+  role: 'Deep Learning Researcher'
+  organization: 'University of Augsburg'
+  location: 'Augsburg, Germany'
+  kind: 'research'
+  start: 2025-05-01
+  end: 2025-10-01
+  summary: 'Multimodal gait analysis integrating video-based pose estimation with wearable IMU and ECG signals, using a hybrid pipeline for high-fidelity temporal alignment.'
+  highlights:
+    [
+      'Conducted interdisciplinary research on multimodal gait analysis, integrating video-based pose estimation with wearable IMU and ECG data.',
+      'Built a hybrid multimodal pipeline with advanced synchronization, ensuring high-fidelity temporal alignment between visual and sensor modalities.',
+      'Collaborated with international researchers to refine modeling frameworks, contributing to a forthcoming publication on multimodal AI.',
+    ]
+  stack: ['Pose Estimation', 'IMU', 'ECG', 'Signal Synchronization']
+- id: 'ntu-ml-researcher'
+  role: 'Machine Learning Researcher'
+  organization: 'Nanyang Technological University (NTU)'
+  location: 'Singapore'
+  kind: 'research'
+  start: 2024-10-01
+  end: 2025-10-01
+  summary: 'Multimodal physiological signal analysis for educational assessment using ECG and GSR data across 73 participants, with cross-subject validation and domain-shift analysis.'
+  highlights:
+    [
+      'Pioneered a multimodal physiological signal analysis framework for educational assessment using ECG and GSR data across 73 participants.',
+      'Designed robust preprocessing pipelines for signal synchronization, wavelet denoising, and normalization.',
+      'Performed cross-subject validation and domain-shift analysis; manuscript currently under preparation.',
+    ]
+  stack: ['ECG', 'GSR', 'Wavelet Denoising', 'Signal Processing']
+- id: 'botter-ai-developer'
+  role: 'Artificial Intelligence Developer'
+  organization: 'Botter Solutions'
+  location: 'Bangalore, India'
+  kind: 'industry'
+  start: 2025-05-01
+  end: 2025-07-01
+  summary: 'End-to-end transformer-based AI pipeline for intelligent table recognition, with multi-cloud inference across Vertex AI, SageMaker, and Azure ML.'
+  highlights:
+    [
+      'Developed an end-to-end transformer-based AI pipeline for intelligent table recognition, improving processing throughput fivefold.',
+      'Architected multi-cloud inference pipelines across Google Vertex AI, AWS SageMaker, and Azure ML.',
+      'Integrated open-source models like MinerU and domain-specific LLMs within a multimodal document intelligence framework.',
+    ]
+  stack: ['Transformers', 'Vertex AI', 'AWS SageMaker', 'Azure ML', 'MinerU']
+- id: 'tekaccel-ai-intern'
+  role: 'AI & Machine Learning Intern'
+  organization: 'Tekaccel'
+  location: 'Hyderabad, India'
+  kind: 'internship'
+  start: 2025-08-01
+  end: 2025-10-01
+  summary: 'LangGraph-based orchestration for context-aware AI interactions, with RAG latency cut 63% via GPU threading, Qdrant indexing, and Neo4j graph reasoning.'
+  highlights:
+    [
+      'Engineered a LangGraph-based orchestration framework for dynamic narrative generation and context-aware AI interactions.',
+      'Optimized RAG pipelines, reducing latency by 63% through GPU threading, Qdrant indexing, and Neo4j graph reasoning.',
+      'Developed a multimodal avatar generation system synchronizing lip movement with speech.',
+    ]
+  stack: ['LangGraph', 'Qdrant', 'Neo4j', 'RAG']

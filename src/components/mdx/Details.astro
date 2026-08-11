@@ -1,0 +1,92 @@
+---
+/**
+ * Details — collapsible content, as a native <details>/<summary>.
+ *
+ * Zero JavaScript, and that is not a compromise: the native element already
+ * gives keyboard operation, the correct ARIA semantics, in-page find that
+ * expands the section to reveal a match, and print output that respects `open`.
+ * A hand-rolled disclosure widget reimplements all four, usually badly.
+ *
+ * `summary` is required. A disclosure control with no label is a triangle that
+ * announces nothing.
+ */
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  summary: string;
+  /** Start expanded — for content that is long rather than secondary. */
+  open?: boolean;
+  class?: string;
+}
+
+const { summary, open = false, class: className } = Astro.props;
+---
+
+<details class:list={['details', className]} open={open}>
+  <summary class="summary">
+    <Icon name="chevron-right" size="1rem" class="marker" />
+    <span>{summary}</span>
+  </summary>
+  <div class="body">
+    <slot />
+  </div>
+</details>
+
+<style>
+  .details {
+    margin-block: 1.5em;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface);
+  }
+
+  .summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    /* 44px target without forcing a 44px-tall bar on a one-line summary. */
+    min-block-size: var(--tap);
+    color: var(--ink);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    list-style: none; /* replaces the UA triangle with .marker */
+  }
+
+  .summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .summary:hover {
+    color: var(--accent);
+  }
+
+  .marker {
+    flex: none;
+    color: var(--ink-3);
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .details[open] > .summary > .marker {
+    transform: rotate(90deg);
+  }
+
+  .body {
+    padding: 0 1rem 1rem;
+    color: var(--ink-2);
+    font-size: var(--fs-base);
+    line-height: var(--lh-prose);
+    border-block-start: 1px solid var(--line);
+    padding-block-start: 0.875rem;
+  }
+
+  .body :global(> :first-child) {
+    margin-block-start: 0;
+  }
+
+  .body :global(> :last-child) {
+    margin-block-end: 0;
+  }
+</style>

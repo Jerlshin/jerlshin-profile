@@ -1,0 +1,44 @@
+---
+/**
+ * ReadingTime — "6 min read", from the remark plugin's structured output.
+ *
+ * The plugin (lib/remark-reading-time.mjs) emits `{ minutes, words }`; the
+ * phrasing lives here, so there is exactly one place on the site that decides
+ * how a reading estimate reads.
+ *
+ * The estimate is an approximation and says so to assistive tech — "about 6
+ * minutes to read" rather than the bare number, which out of visual context
+ * ("6 min read" next to a date) is easy to hear as part of the date.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '../primitives/Icon.astro';
+import type { ReadingTimeData } from '../../lib/reading-time.ts';
+
+interface Props extends HTMLAttributes<'span'> {
+  /** The `readingTime` object from remarkPluginFrontmatter. */
+  readingTime?: ReadingTimeData;
+  icon?: boolean;
+}
+
+const { readingTime, icon = true, class: className, ...rest } = Astro.props;
+---
+
+{
+  readingTime && (
+    <span class:list={['reading', className]} {...rest}>
+      {icon && <Icon name="clock" size="0.8125rem" />}
+      <span aria-hidden="true" class="tabular">{`${readingTime.minutes} min read`}</span>
+      <span class="sr-only">{`About ${readingTime.minutes} minutes to read, ${readingTime.words} words`}</span>
+    </span>
+  )
+}
+
+<style>
+  .reading {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    color: var(--ink-3);
+    font-size: var(--fs-sm);
+  }
+</style>

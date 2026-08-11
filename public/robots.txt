@@ -1,0 +1,22 @@
+# robots.txt — served verbatim from public/.
+#
+# The whole site is meant to be indexed; that is a large part of why it stopped
+# being a single-page React app (audit finding #7). So the policy is "allow
+# everything", and the only job left is pointing crawlers at the sitemap.
+#
+# /og/ is disallowed rather than left open: those PNGs are social-card assets
+# referenced by og:image, not pages. A crawler that indexes them adds nine
+# images to Google Images that nobody searched for and that link nowhere useful.
+# Social scrapers (Facebook, X, LinkedIn, Slack) fetch og:image directly and do
+# not consult robots.txt, so this does not affect link previews.
+#
+# /search is disallowed for the same reason its <head> carries noindex: its
+# content is a search box, and every page it can find is indexed on its own.
+
+User-agent: *
+Allow: /
+Disallow: /og/
+Disallow: /search
+Disallow: /styleguide
+
+Sitemap: https://jerlshin-profile.vercel.app/sitemap-index.xml

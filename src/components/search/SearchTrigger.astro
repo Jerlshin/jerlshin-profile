@@ -1,0 +1,108 @@
+---
+/**
+ * SearchTrigger — the header control that opens the ⌘K dialog.
+ *
+ * HIDDEN UNTIL ITS OWN SCRIPT RUNS, exactly like ThemeToggle. Pagefind is a
+ * WebAssembly client with no server behind it, so with JavaScript off there is
+ * no degraded search to fall back to — only a button that would do nothing.
+ * §7.2 #6 asks that everything be reachable without JavaScript, and the answer
+ * for search is that the archives are, and that this control does not pretend
+ * otherwise. The `hidden` attribute is removed by SearchDialog's script, which
+ * is also the only thing that can service a click.
+ *
+ * The keyboard hint renders the platform's own modifier: ⌘ on Apple hardware,
+ * Ctrl elsewhere. It is filled in by script for the same reason the theme icons
+ * are not — the server cannot know, and guessing wrong puts a wrong instruction
+ * on the page.
+ */
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<button
+  id="search-open"
+  type="button"
+  class:list={['trigger', className]}
+  data-search-open
+  hidden
+  aria-label="Search this site"
+  aria-haspopup="dialog"
+  aria-controls="search-dialog"
+>
+  <Icon name="search" size="1.125rem" />
+  <span class="label">Search</span>
+  <kbd class="kbd" data-search-kbd aria-hidden="true"></kbd>
+</button>
+
+<style>
+  .trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-block-size: var(--tap);
+    padding-inline: 0.5rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition:
+      color var(--dur-fast) var(--ease),
+      background-color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
+  }
+
+  /* `[hidden]` is removed by SearchDialog's script. The explicit rule is here
+     because the flex display above would otherwise beat the UA's
+     `[hidden] { display: none }` at equal specificity. */
+  .trigger[hidden] {
+    display: none;
+  }
+
+  .trigger:hover {
+    color: var(--ink);
+    background-color: var(--surface-2);
+  }
+
+  /* Below the desktop nav breakpoint the header is tight: the icon alone is the
+     control, and the word and the shortcut both go. */
+  .label,
+  .kbd {
+    display: none;
+  }
+
+  @media (min-width: 64rem) {
+    .trigger {
+      padding-inline: 0.625rem 0.5rem;
+      border-color: var(--line);
+      background-color: var(--surface);
+    }
+
+    .label {
+      display: inline;
+      font-size: var(--fs-sm);
+    }
+
+    .kbd {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.0625rem 0.375rem;
+      background-color: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xs);
+      color: var(--ink-3);
+      font-family: var(--ff-mono);
+      font-size: var(--fs-2xs);
+    }
+
+    /* Nothing to frame until the script has filled in the platform key. */
+    .kbd:empty {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,49 @@
+---
+/**
+ * ExperienceTimeline — the ordered list of roles.
+ *
+ * An <ol>, not a stack of <div>s: the order is the meaning here, and a screen
+ * reader should announce "list, 4 items" and count down through them. The
+ * bullets and numbers are removed visually; ExperienceItem draws the rail.
+ *
+ * Sorting happens in lib/collections.ts (`roles()`), not here — a component
+ * that both fetches and orders its own data is a component you cannot reuse for
+ * "the two most recent roles" on the homepage.
+ */
+import type { CollectionEntry } from 'astro:content';
+import type { HTMLAttributes } from 'astro/types';
+import ExperienceItem from './ExperienceItem.astro';
+import EmptyState from './EmptyState.astro';
+
+interface Props extends HTMLAttributes<'ol'> {
+  roles: CollectionEntry<'experience'>[];
+  level?: 2 | 3 | 4;
+}
+
+const { roles, level = 3, class: className, ...rest } = Astro.props;
+---
+
+{
+  roles.length === 0 ? (
+    <EmptyState
+      title="No roles recorded yet"
+      body="Experience entries live in src/content/experience.yaml."
+    />
+  ) : (
+    <ol class:list={['timeline', className]} {...rest}>
+      {roles.map((role) => (
+        <li>
+          <ExperienceItem role={role} level={level} />
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+<style>
+  .timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+</style>

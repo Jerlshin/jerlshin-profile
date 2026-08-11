@@ -1,0 +1,251 @@
+---
+/**
+ * ProjectLayout — an L3 project case study.
+ *
+ * Structurally the sibling of PaperLayout, with the parts a project has that a
+ * paper does not: a stack, an architecture figure, and outbound links to a repo
+ * or a live deployment.
+ *
+ * THE LINK ROW IS DERIVED FROM THE SCHEMA, so a project with no repository
+ * renders no repository button. §4.3's third refine already forbids a `shipped`
+ * project from having neither `repo` nor `live`, which means the one status
+ * that promises a reader something to visit cannot ship without it.
+ */
+import { getEntry, type CollectionEntry } from 'astro:content';
+import BaseLayout from './BaseLayout.astro';
+import Container from '../components/primitives/Container.astro';
+import Prose from '../components/primitives/Prose.astro';
+import Btn from '../components/primitives/Btn.astro';
+import Pill from '../components/primitives/Pill.astro';
+import StatusBadge from '../components/primitives/StatusBadge.astro';
+import Breadcrumbs from '../components/chrome/Breadcrumbs.astro';
+import MetricGrid from '../components/content/MetricGrid.astro';
+import StackList from '../components/content/StackList.astro';
+import ArchitectureFigure from '../components/content/ArchitectureFigure.astro';
+import TagList from '../components/content/TagList.astro';
+import PaperCard from '../components/content/PaperCard.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
+import { formatRange, isoDate } from '../lib/dates.ts';
+import { ogPath } from '../lib/og.ts';
+import { KIND } from '../lib/kinds.ts';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const CATEGORY: Record<CollectionEntry<'projects'>['data']['category'], string> = {
+  research: 'Research',
+  engineering: 'Engineering',
+  systems: 'Systems',
+  tooling: 'Tooling',
+  demo: 'Demo',
+};
+
+/** Declared once, rendered in this order. Absent URLs render no button. */
+const LINKS = [
+  { key: 'repo', label: 'Repository', icon: 'github' },
+  { key: 'live', label: 'Live site', icon: 'external-link' },
+  { key: 'demo', label: 'Demo', icon: 'play' },
+  { key: 'docs', label: 'Docs', icon: 'book-open' },
+  { key: 'video', label: 'Video', icon: 'video' },
+] as const;
+
+const { project } = Astro.props;
+const { data } = project;
+
+const links = LINKS.map((l) => ({ ...l, href: data.links[l.key] })).filter(
+  (l): l is typeof l & { href: string } => Boolean(l.href),
+);
+
+const related = await Promise.all(data.related.map((ref) => getEntry(ref)));
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.summary}
+  type="article"
+  image={ogPath(`projects/${project.id}`)}
+  imageAlt={`${data.title} — ${CATEGORY[data.category]}`}
+  publishedTime={isoDate(data.start)}
+  modifiedTime={data.end ? isoDate(data.end) : undefined}
+>
+  <JsonLd kind="project" entry={project} slot="head" />
+
+  <Container width="content" class="project">
+    <Breadcrumbs
+      items={[{ label: 'Projects', href: '/projects' }, { label: data.title }]}
+      class="crumbs"
+    />
+
+    <article
+      data-pagefind-body
+      data-pagefind-meta={`kind:${KIND.project}`}
+      data-pagefind-filter={`kind:${KIND.project}`}
+    >
+      <header class="head">
+        <div class="badges">
+          <Pill tone="neutral" size="sm">{CATEGORY[data.category]}</Pill>
+          <StatusBadge status={data.status} />
+          {
+            data.role && (
+              <Pill tone="outline" size="sm">
+                {data.role}
+              </Pill>
+            )
+          }
+        </div>
+
+        <h1 class="title">{data.title}</h1>
+
+        <p class="period tabular">{formatRange(data.start, data.end)}</p>
+
+        <p class="summary">{data.summary}</p>
+
+        {
+          links.length > 0 && (
+            <ul class="links" aria-label="Project resources">
+              {links.map(({ key, label, icon, href }) => (
+                <li>
+                  <Btn
+                    href={href}
+                    size="sm"
+                    iconStart={icon}
+                    external
+                    variant={key === 'repo' ? 'primary' : 'secondary'}
+                  >
+                    {label}
+                  </Btn>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </header>
+
+      {data.metrics.length > 0 && <MetricGrid metrics={data.metrics} class="metrics" />}
+
+      {data.architecture && <ArchitectureFigure architecture={data.architecture} />}
+
+      <Prose class="body">
+        <slot />
+      </Prose>
+    </article>
+
+    <footer class="foot" data-pagefind-ignore>
+      <section aria-labelledby="stack-heading" class="block">
+        <h2 class="overline" id="stack-heading">Stack</h2>
+        <StackList items={data.stack} size="md" tone="outline" class="stack" />
+      </section>
+
+      {
+        data.tags.length > 0 && (
+          <section aria-labelledby="tags-heading" class="block">
+            <h2 class="overline" id="tags-heading">
+              Tags
+            </h2>
+            {/* Inert chips: project tags have no static archive route yet, and
+                a chip that looks like a link and goes nowhere is the defect
+                this migration exists to remove. */}
+            <TagList tags={data.tags} size="md" label="Project tags" class="tags" />
+          </section>
+        )
+      }
+
+      {
+        related.length > 0 && (
+          <section aria-labelledby="related-heading" class="block">
+            <h2 class="overline" id="related-heading">
+              Related research
+            </h2>
+            <div class="related">
+              {related.map((paper) => (
+                <PaperCard paper={paper} level={3} compact />
+              ))}
+            </div>
+          </section>
+        )
+      }
+    </footer>
+  </Container>
+</BaseLayout>
+
+<style>
+  .project {
+    padding-block: var(--space-section);
+  }
+
+  .crumbs {
+    margin-block-end: var(--space-block);
+  }
+
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-end: 0.875rem;
+  }
+
+  .title {
+    font-size: var(--fs-3xl);
+    text-wrap: balance;
+  }
+
+  .period {
+    margin-block-start: 0.5rem;
+    color: var(--ink-3);
+    font-family: var(--ff-mono);
+    font-size: var(--fs-sm);
+  }
+
+  .summary {
+    margin-block-start: 1rem;
+    max-inline-size: var(--measure);
+    color: var(--ink-2);
+    font-size: var(--fs-lg);
+    line-height: var(--lh-prose);
+    text-wrap: pretty;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0;
+  }
+
+  .metrics,
+  .body {
+    margin-block-start: var(--space-block);
+  }
+
+  .foot {
+    margin-block-start: var(--space-section);
+    padding-block-start: var(--space-block);
+    border-block-start: 1px solid var(--line);
+  }
+
+  .block + .block {
+    margin-block-start: var(--space-block);
+  }
+
+  .stack,
+  .tags {
+    margin-block-start: 0.625rem;
+  }
+
+  .related {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-block-start: 0.75rem;
+  }
+
+  @media (min-width: 48rem) {
+    .related {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

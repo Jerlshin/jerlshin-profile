@@ -1,0 +1,264 @@
+/* ==========================================================================
+   src/styles/prose.css — long-form typography.
+
+   Imported by Prose.astro, not by global.css, so pages with no long-form body
+   (the homepage, archives) never download it.
+
+   Plain CSS on tokens only: no Tailwind directives, so it needs no @reference
+   and stays readable to anyone who knows CSS and nothing about this project.
+
+   Everything here is measured against §6.4: AAA contrast on body text, a hard
+   68ch measure, and no rule that changes geometry between themes.
+   ========================================================================== */
+
+.prose {
+  color: var(--ink);
+  font-size: var(--fs-md);
+  line-height: var(--lh-prose);
+  /* Hyphenation only where the language is known, so it cannot mis-break. */
+  text-wrap: pretty;
+}
+
+.prose > * + * {
+  margin-block-start: 1.1em;
+}
+
+/* --- Headings ------------------------------------------------------------
+   Top margin is large, bottom margin small: a heading belongs to the text
+   BELOW it, and spacing should say so. */
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin-block-start: 2em;
+  margin-block-end: 0.6em;
+  scroll-margin-top: calc(var(--header-h) + 1.5rem);
+}
+
+.prose h2 {
+  font-size: var(--fs-2xl);
+  padding-block-end: 0.3em;
+  border-block-end: 1px solid var(--line);
+}
+
+.prose h3 {
+  font-size: var(--fs-xl);
+}
+
+.prose h4 {
+  font-size: var(--fs-lg);
+}
+
+.prose > :first-child {
+  margin-block-start: 0;
+}
+
+/* Heading anchors: rehype-autolink-headings wraps the heading text in an <a
+   class="anchor">. It must not look like a link until it is interacted with —
+   otherwise every heading on the page reads as accent-coloured. */
+
+.prose .anchor {
+  color: inherit;
+  text-decoration: none;
+  position: relative;
+}
+
+.prose .anchor:hover {
+  color: var(--accent);
+}
+
+.prose .anchor::after {
+  content: '#';
+  position: absolute;
+  inset-inline-start: -0.75em;
+  color: var(--ink-3);
+  opacity: 0;
+  font-weight: 400;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.prose .anchor:hover::after,
+.prose .anchor:focus-visible::after {
+  opacity: 1;
+}
+
+/* --- Links ---------------------------------------------------------------- */
+
+.prose a:not(.anchor):not(.no-underline) {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: from-font;
+  text-underline-offset: 0.15em;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.prose a:not(.anchor):hover {
+  color: var(--accent-hover);
+}
+
+/* --- Lists ---------------------------------------------------------------- */
+
+.prose ul,
+.prose ol {
+  padding-inline-start: 1.5em;
+}
+
+.prose ul {
+  list-style: disc;
+}
+
+.prose ol {
+  list-style: decimal;
+}
+
+.prose li + li {
+  margin-block-start: 0.4em;
+}
+
+.prose li::marker {
+  color: var(--ink-3);
+}
+
+.prose li > ul,
+.prose li > ol {
+  margin-block-start: 0.4em;
+}
+
+/* --- Quotes and callouts --------------------------------------------------- */
+
+.prose blockquote {
+  padding-inline-start: 1.25em;
+  border-inline-start: 2px solid var(--line-strong);
+  color: var(--ink-2);
+}
+
+.prose blockquote p {
+  margin-block: 0.5em;
+}
+
+/* --- Code -----------------------------------------------------------------
+   Fenced blocks belong to Expressive Code, which brings its own frame. Only
+   inline code is styled here, so the two never fight. */
+
+.prose :not(pre) > code {
+  padding: 0.15em 0.35em;
+  font-size: 0.875em;
+  color: var(--ink);
+  background-color: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  /* Long identifiers must not push the measure wider on a 360px screen. */
+  overflow-wrap: break-word;
+}
+
+.prose .expressive-code {
+  margin-block: 1.5em;
+}
+
+/* --- Figures and media ----------------------------------------------------- */
+
+.prose figure {
+  margin-block: 1.75em;
+}
+
+.prose img,
+.prose video {
+  border-radius: var(--radius-sm);
+}
+
+.prose figcaption {
+  margin-block-start: 0.625em;
+  color: var(--ink-3);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal);
+  text-align: start;
+}
+
+/* --- Tables ---------------------------------------------------------------
+   Wide tables scroll inside their own box. The page body must never scroll
+   horizontally, at any viewport — that is the 360px failure mode. */
+
+.prose .table-wrap,
+.prose table {
+  display: block;
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
+
+.prose table {
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.prose th,
+.prose td {
+  padding: 0.5em 0.875em;
+  border: 1px solid var(--line);
+  text-align: start;
+  vertical-align: top;
+}
+
+.prose th {
+  background-color: var(--surface-2);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.prose tbody tr:nth-child(even) {
+  background-color: color-mix(in srgb, var(--surface-2) 45%, transparent);
+}
+
+/* --- Misc ------------------------------------------------------------------ */
+
+.prose hr {
+  margin-block: 2.5em;
+  border: 0;
+  border-block-start: 1px solid var(--line);
+}
+
+.prose strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.prose abbr[title] {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+
+.prose kbd {
+  padding: 0.15em 0.4em;
+  font-size: 0.85em;
+  border: 1px solid var(--control);
+  border-block-end-width: 2px;
+  border-radius: var(--radius-xs);
+  background-color: var(--surface-2);
+}
+
+.prose sup,
+.prose sub {
+  line-height: 0; /* footnote markers must not open up the line */
+}
+
+/* Footnotes, as emitted by GFM. */
+.prose .footnotes {
+  margin-block-start: 3em;
+  padding-block-start: 1.5em;
+  border-block-start: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+}
+
+/* --- Math ------------------------------------------------------------------
+   The KaTeX stylesheet itself is loaded only when frontmatter says math: true
+   (§2.4). These rules just keep a wide display equation from breaking the
+   layout on a phone. */
+
+.prose .katex-display {
+  margin-block: 1.5em;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.25em;
+}

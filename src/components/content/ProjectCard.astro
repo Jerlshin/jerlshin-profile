@@ -1,0 +1,121 @@
+---
+/**
+ * ProjectCard — one project in the /projects archive and on the homepage rail.
+ *
+ * `summary` is the card text AND the meta description, which is why §4.3 bounds
+ * it at 40–200 characters: one string, two jobs, both of which break at the
+ * wrong length. Nothing here truncates it, because a CSS line-clamp would make
+ * the rendered card and the <meta> tag disagree about what the project is.
+ *
+ * The date range renders through lib/dates.ts, so `end: null` becomes
+ * "Present" by the schema's own convention rather than by a local ternary that
+ * some other component would eventually get wrong.
+ */
+import type { CollectionEntry } from 'astro:content';
+import Card from '../primitives/Card.astro';
+import StatusBadge from '../primitives/StatusBadge.astro';
+import StackList from './StackList.astro';
+import TagList from './TagList.astro';
+import { formatRange } from '../../lib/dates.ts';
+import { tagAttr } from '../../lib/tags.ts';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  compact?: boolean;
+  level?: 2 | 3 | 4;
+  class?: string;
+}
+
+const { project, compact = false, level = 3, class: className } = Astro.props;
+const { data } = project;
+const href = `/projects/${project.id}`;
+const Heading = `h${level}` as const;
+
+const CATEGORY: Record<CollectionEntry<'projects'>['data']['category'], string> = {
+  research: 'Research',
+  engineering: 'Engineering',
+  systems: 'Systems',
+  tooling: 'Tooling',
+  demo: 'Demo',
+};
+---
+
+<Card
+  as="article"
+  interactive
+  padding="lg"
+  class:list={['project', { compact }, className]}
+  data-tags={tagAttr(data.tags)}
+>
+  <div class="top">
+    <p class="category overline">{CATEGORY[data.category]}</p>
+    <StatusBadge status={data.status} />
+  </div>
+
+  <Heading class="title">
+    <a href={href} class="stretched-link">{data.title}</a>
+  </Heading>
+
+  <p class="period tabular">{formatRange(data.start, data.end)}</p>
+
+  <p class="summary">{data.summary}</p>
+
+  {!compact && <StackList items={data.stack} max={4} class="stack" />}
+
+  {
+    !compact && data.tags.length > 0 && (
+      <TagList tags={data.tags} class="tags above-stretch" label="Project tags" />
+    )
+  }
+</Card>
+
+<style>
+  .project {
+    gap: 0.5rem;
+  }
+
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .title {
+    font-size: var(--fs-lg);
+    line-height: var(--lh-snug);
+    text-wrap: balance;
+  }
+
+  .title a {
+    color: var(--ink);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .project:hover .title a {
+    color: var(--accent);
+  }
+
+  .period {
+    color: var(--ink-3);
+    font-size: var(--fs-xs);
+    font-family: var(--ff-mono);
+  }
+
+  .summary {
+    margin-block-start: 0.25rem;
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+  }
+
+  .stack,
+  .tags {
+    margin-block-start: 0.5rem;
+  }
+
+  .compact .title {
+    font-size: var(--fs-base);
+  }
+</style>

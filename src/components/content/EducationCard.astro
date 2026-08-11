@@ -1,0 +1,156 @@
+---
+/**
+ * EducationCard — one degree, with its thesis.
+ *
+ * `thesis.entry` is a `reference('research')` (§4.5), so when it is set the
+ * thesis title links straight to the paper's own page. That is the payoff of
+ * modelling it as a reference rather than a string: the link is validated at
+ * build time, and a slug typo is a build error rather than a 404 nobody clicks
+ * often enough to report.
+ */
+import type { CollectionEntry } from 'astro:content';
+import Card from '../primitives/Card.astro';
+import Icon from '../primitives/Icon.astro';
+import { formatRange } from '../../lib/dates.ts';
+
+interface Props {
+  education: CollectionEntry<'education'>;
+  level?: 2 | 3 | 4;
+  class?: string;
+}
+
+const { education, level = 3, class: className } = Astro.props;
+const { data } = education;
+const Heading = `h${level}` as const;
+
+// `reference()` resolves to { collection, id } — the page route is derived from
+// the id, the same way every other research link on the site is built.
+const thesisHref = data.thesis?.entry ? `/research/${data.thesis.entry.id}` : data.thesis?.url;
+---
+
+<Card as="article" padding="lg" class:list={['education', className]}>
+  <p class="period tabular">{formatRange(data.start, data.end)}</p>
+
+  <Heading class="degree">{data.degree}</Heading>
+  {data.specialization && <p class="spec">Specialisation in {data.specialization}</p>}
+
+  <p class="institution">
+    {data.institution}
+    <span class="where">
+      <Icon name="map-pin" size="0.8125rem" />
+      {data.location}
+    </span>
+  </p>
+
+  {
+    data.grade && (
+      <p class="grade">
+        <Icon name="award" size="0.875rem" />
+        <span class="tabular">{data.grade}</span>
+      </p>
+    )
+  }
+
+  {
+    data.thesis && (
+      <div class="thesis">
+        <p class="overline">Thesis</p>
+        <p class="thesis-title">
+          {thesisHref ? (
+            <a href={thesisHref} class="link">
+              {data.thesis.title}
+            </a>
+          ) : (
+            data.thesis.title
+          )}
+        </p>
+        {data.thesis.advisor && <p class="advisor">Advised by {data.thesis.advisor}</p>}
+      </div>
+    )
+  }
+
+  {
+    data.coursework.length > 0 && (
+      <div class="coursework">
+        <p class="overline">Selected coursework</p>
+        <p class="courses">{data.coursework.join(' · ')}</p>
+      </div>
+    )
+  }
+</Card>
+
+<style>
+  .education {
+    gap: 0.25rem;
+  }
+
+  .period {
+    color: var(--ink-3);
+    font-family: var(--ff-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .degree {
+    margin-block-start: 0.375rem;
+    font-size: var(--fs-lg);
+    line-height: var(--lh-snug);
+  }
+
+  .spec {
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+  }
+
+  .institution {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+    margin-block-start: 0.5rem;
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+  }
+
+  .where {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    color: var(--ink-3);
+    font-weight: 400;
+  }
+
+  .grade {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-block-start: 0.5rem;
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+  }
+
+  .thesis,
+  .coursework {
+    margin-block-start: 1rem;
+    padding-block-start: 0.875rem;
+    border-block-start: 1px solid var(--line);
+  }
+
+  .thesis-title {
+    margin-block-start: 0.375rem;
+    max-inline-size: var(--measure);
+    color: var(--ink);
+    font-family: var(--ff-display);
+    line-height: var(--lh-snug);
+    text-wrap: pretty;
+  }
+
+  .advisor,
+  .courses {
+    margin-block-start: 0.375rem;
+    color: var(--ink-3);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+  }
+</style>

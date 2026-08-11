@@ -1,0 +1,99 @@
+---
+/**
+ * /experience — L2 archive: roles, education, and skills.
+ *
+ * A single column, not a card grid. A timeline is a sequence, and laying a
+ * sequence out in three columns asks the reader to work out the reading order
+ * for themselves.
+ *
+ * The lede is §5.8's App.jsx:674 subtitle.
+ */
+import ArchiveLayout from '../layouts/ArchiveLayout.astro';
+import Section from '../components/primitives/Section.astro';
+import SectionHeader from '../components/primitives/SectionHeader.astro';
+import Pill from '../components/primitives/Pill.astro';
+import Card from '../components/primitives/Card.astro';
+import ExperienceTimeline from '../components/content/ExperienceTimeline.astro';
+import EducationCard from '../components/content/EducationCard.astro';
+import { roles, degrees, skills } from '../lib/collections.ts';
+import { KIND } from '../lib/kinds.ts';
+
+const [allRoles, allDegrees, allSkills] = await Promise.all([roles(), degrees(), skills()]);
+---
+
+<ArchiveLayout
+  title="Experience"
+  heading="Experience"
+  eyebrow="Career"
+  description="Research and engineering roles across academic and industrial AI labs, with the education and skills behind them."
+  lede="A timeline of my contributions to academic and industrial AI labs."
+  crumbs={[{ label: 'Experience' }]}
+  gridId="experience-grid"
+  columns={1}
+  count={allRoles.length}
+  countLabel={allRoles.length === 1 ? 'role' : 'roles'}
+  searchKind={KIND.experience}
+>
+  <ExperienceTimeline roles={allRoles} level={2} />
+
+  <Fragment slot="after">
+    <Section spacing="compact" width={false} class="band">
+      <SectionHeader title="Education" level={2} size="md" id="education-heading" />
+      <div class="education">
+        {allDegrees.map((degree) => <EducationCard education={degree} level={3} />)}
+      </div>
+    </Section>
+
+    <Section spacing="compact" width={false} class="band">
+      <SectionHeader title="Skills" level={2} size="md" id="skills-heading" />
+      <div class="skills">
+        {
+          allSkills.map((group) => (
+            <Card as="section" padding="lg" aria-labelledby={`skills-${group.data.id}`}>
+              <h3 class="overline" id={`skills-${group.data.id}`}>
+                {group.data.category}
+              </h3>
+              <ul class="items">
+                {group.data.items.map((item) => (
+                  <li>
+                    <Pill tone="outline" size="sm">
+                      {item}
+                    </Pill>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ))
+        }
+      </div>
+    </Section>
+  </Fragment>
+</ArchiveLayout>
+
+<style>
+  .band {
+    max-inline-size: var(--content-max);
+  }
+
+  .education,
+  .skills {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (min-width: 48rem) {
+    .skills {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+  }
+</style>

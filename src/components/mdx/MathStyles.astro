@@ -1,0 +1,34 @@
+---
+/**
+ * MathStyles — the conditional KaTeX stylesheet link (risk #12).
+ *
+ * Rendered into <head> via the layout's `head` slot ONLY when frontmatter says
+ * `math: true`, so pages with no equations pay nothing. The file it points at
+ * is vendored out of the npm package by scripts/sync-katex-assets.mjs — never a
+ * CDN (§2.4).
+ *
+ * The two <link rel="preload"> hints cover the faces every equation on this
+ * site actually uses: KaTeX_Main-Regular for upright text and digits, and
+ * KaTeX_Math-Italic for variables. Without them the browser cannot discover a
+ * font until it has parsed the stylesheet and laid out the equation, which
+ * shows a frame of fallback glyphs at the wrong metrics. Preloading ALL twenty
+ * faces would be worse than none, so this is deliberately the short list; a
+ * page using \mathcal or \mathfrak simply loads those two the normal way.
+ */
+---
+
+<link
+  rel="preload"
+  as="font"
+  type="font/woff2"
+  href="/katex/fonts/KaTeX_Main-Regular.woff2"
+  crossorigin
+/>
+<link
+  rel="preload"
+  as="font"
+  type="font/woff2"
+  href="/katex/fonts/KaTeX_Math-Italic.woff2"
+  crossorigin
+/>
+<link rel="stylesheet" href="/katex/katex.min.css" />

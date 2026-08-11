@@ -1,0 +1,120 @@
+---
+/**
+ * SiteHeader — the persistent frame at the top of every page.
+ *
+ * Sticky, one hairline, no blur. The v1 header used backdrop-filter, which is
+ * a per-frame GPU cost on every scroll for a decorative effect; §6.4 replaces
+ * it with an opaque surface and a border.
+ *
+ * SearchTrigger sits in the `.tools` group and ships `hidden`; SearchDialog's
+ * script removes that attribute, so the control appears only once something can
+ * service a click on it. Same discipline as ThemeToggle — a visible control
+ * that does nothing is the defect this migration exists to fix.
+ */
+import { site } from '../../config/site.ts';
+import Nav from './Nav.astro';
+import ThemeToggle from './ThemeToggle.astro';
+import MobileDrawer from './MobileDrawer.astro';
+import SearchTrigger from '../search/SearchTrigger.astro';
+import Container from '../primitives/Container.astro';
+
+const onHome = (Astro.url.pathname.replace(/\/+$/, '') || '/') === '/';
+---
+
+<header class="header">
+  <Container width="shell" class="bar">
+    <a href="/" class="brand" aria-current={onHome ? 'page' : undefined}>
+      <span class="brand-name">{site.name}</span>
+      <span class="brand-role">{site.headline}</span>
+    </a>
+
+    <div class="tools">
+      <Nav variant="bar" class="desktop-nav" />
+      <SearchTrigger />
+      <ThemeToggle />
+      <MobileDrawer />
+    </div>
+  </Container>
+</header>
+
+<style>
+  .header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--z-header);
+    background-color: var(--bg);
+    border-block-end: 1px solid var(--line);
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-block-size: var(--header-h);
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+    min-inline-size: 0;
+    padding-block: 0.5rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .brand-name {
+    font-family: var(--ff-display);
+    font-size: var(--fs-base);
+    font-weight: 600;
+    letter-spacing: var(--tracking-tight);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* The headline is context, not navigation: it is the first thing to go when
+     width runs out, and it never truncates the name to survive. */
+  .brand-role {
+    display: none;
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @media (min-width: 48rem) {
+    .brand-role {
+      display: block;
+    }
+  }
+
+  .brand-role::before {
+    content: '';
+    display: inline-block;
+    inline-size: 1px;
+    block-size: 0.75em;
+    margin-inline-end: 0.625rem;
+    background-color: var(--line-strong);
+    vertical-align: -0.05em;
+  }
+
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: none;
+  }
+
+  /* §6.4: the horizontal nav appears at 1024px, where the drawer disappears. */
+  .desktop-nav {
+    display: none;
+  }
+
+  @media (min-width: 64rem) {
+    .desktop-nav {
+      display: block;
+      margin-inline-end: 0.5rem;
+    }
+  }
+</style>

@@ -1,0 +1,39 @@
+---
+/**
+ * SkipLink — the first focusable element on every page.
+ *
+ * Off-screen rather than `display: none`, because a hidden element is not
+ * focusable and a skip link that cannot be focused is not a skip link. It
+ * becomes visible on :focus-visible only.
+ */
+---
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<style>
+  .skip-link {
+    position: fixed;
+    inset-block-start: 0.5rem;
+    inset-inline-start: 0.5rem;
+    z-index: var(--z-skip);
+    padding: 0.75rem 1.125rem;
+    background-color: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--control);
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    /* Moved out of view, but still rendered, still focusable, still read. */
+    transform: translateY(calc(-100% - 1rem));
+    transition: transform var(--dur) var(--ease);
+    /* The shadow is applied only on focus. A drop shadow is painted OUTSIDE the
+       box, so on the parked element it reached back past the top edge and left
+       a visible sliver across the top of every page. */
+    box-shadow: none;
+  }
+
+  .skip-link:focus-visible {
+    transform: translateY(0);
+    box-shadow: var(--shadow-2);
+  }
+</style>

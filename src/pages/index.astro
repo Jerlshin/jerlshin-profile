@@ -1,0 +1,286 @@
+---
+/**
+ * / — L1, the executive overview.
+ *
+ * BUILT LAST, on purpose (§7 Phase 4). Every component below already renders
+ * correctly on its own archive page, so this file is composition and nothing
+ * else: it contains no card markup, no metadata formatting, and no content.
+ * Building the homepage first guarantees rework, because the cards it needs do
+ * not exist yet and get invented here in a form the archives then have to
+ * match.
+ *
+ * IT IS ALSO THE PROOF OF PHASE 4'S EXIT GATE — every content item reachable in
+ * at most two clicks:
+ *
+ *   featured paper / project / post   → 1 click, from the rails below
+ *   any other paper / project / post  → 2 clicks, via the rail's "View all"
+ *   any role, degree, or achievement  → 1 click, since those archives ARE the
+ *                                       item list rather than a set of cards
+ *                                       linking to detail pages
+ *
+ * The rails render nothing when a collection is empty (FeaturedRail returns
+ * null on `count === 0`), so an empty section can never appear under a heading.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Section from '../components/primitives/Section.astro';
+import SectionHeader from '../components/primitives/SectionHeader.astro';
+import Btn from '../components/primitives/Btn.astro';
+import Pill from '../components/primitives/Pill.astro';
+import Icon from '../components/primitives/Icon.astro';
+import Card from '../components/primitives/Card.astro';
+import FeaturedRail from '../components/content/FeaturedRail.astro';
+import PaperCard from '../components/content/PaperCard.astro';
+import ProjectCard from '../components/content/ProjectCard.astro';
+import PostCard from '../components/content/PostCard.astro';
+import ExperienceTimeline from '../components/content/ExperienceTimeline.astro';
+import { site } from '../config/site.ts';
+import { papers, projects, posts, roles, skills, featured } from '../lib/collections.ts';
+import { KIND } from '../lib/kinds.ts';
+
+const [allPapers, allProjects, allPosts, allRoles, allSkills] = await Promise.all([
+  papers(),
+  projects(),
+  posts(),
+  roles(),
+  skills(),
+]);
+
+const featuredPapers = featured(allPapers, 3);
+const featuredProjects = featured(allProjects, 3);
+const latestPosts = allPosts.slice(0, 3);
+// The two most recent roles. The rest are one click away on /experience.
+const recentRoles = allRoles.slice(0, 2);
+---
+
+<BaseLayout title={`${site.name} — ${site.headline}`} description={site.tagline} suffix={false}>
+  <Section spacing="loose" width="shell">
+    {
+      /* The hero alone is the homepage's search record. The rails below it are
+        cards whose text belongs to the detail pages they link to, so indexing
+        them would return the same paper twice for one query — once here and
+        once at its own URL (§6.3). */
+    }
+    <div
+      class="hero"
+      data-pagefind-body
+      data-pagefind-meta={`kind:${KIND.profile}`}
+      data-pagefind-filter={`kind:${KIND.profile}`}
+    >
+      {
+        site.availability && (
+          <Pill tone="accent" size="md" class="availability">
+            <span class="dot" aria-hidden="true" />
+            {site.availability}
+          </Pill>
+        )
+      }
+
+      <h1 class="name">{site.name}</h1>
+      <p class="headline">{site.headline}</p>
+      <p class="tagline">{site.tagline}</p>
+
+      <p class="where">
+        <Icon name="map-pin" size="0.9375rem" />
+        {site.location}
+      </p>
+
+      <div class="actions">
+        <Btn href="/research" variant="primary" iconEnd="arrow-right">Read the research</Btn>
+        {
+          /* Absent, not broken, while `site.cv` is null — see the note in
+            src/config/site.ts. `data-astro-prefetch="false"` because
+            prefetchAll would otherwise download the whole PDF on viewport,
+            for every visitor, whether or not they ever click it. */
+        }
+        {
+          site.cv && (
+            <Btn
+              href={site.cv}
+              variant="secondary"
+              iconStart="file-down"
+              data-astro-prefetch="false"
+            >
+              Curriculum vitae
+            </Btn>
+          )
+        }
+        <Btn href={`mailto:${site.email}`} variant="ghost" iconStart="mail">Get in touch</Btn>
+      </div>
+    </div>
+  </Section>
+
+  <FeaturedRail
+    id="research"
+    title="Selected research"
+    eyebrow="Publications"
+    lede="Peer-reviewed contributions to the scientific community."
+    href="/research"
+    actionLabel={`All ${allPapers.length} papers`}
+    count={featuredPapers.length}
+    columns={3}
+    tone="surface"
+  >
+    {featuredPapers.map((paper) => <PaperCard paper={paper} level={3} />)}
+  </FeaturedRail>
+
+  <FeaturedRail
+    id="projects"
+    title="Selected projects"
+    eyebrow="Engineering"
+    lede="Showcasing innovation in multimodal learning and orchestrating AI pipelines."
+    href="/projects"
+    actionLabel={`All ${allProjects.length} projects`}
+    count={featuredProjects.length}
+    columns={3}
+  >
+    {featuredProjects.map((project) => <ProjectCard project={project} level={3} />)}
+  </FeaturedRail>
+
+  <FeaturedRail
+    id="writing"
+    title="Latest writing"
+    eyebrow="Blog"
+    lede="Working notes on multimodal learning, signal processing, and reproducible research engineering."
+    href="/blog"
+    actionLabel="All posts"
+    count={latestPosts.length}
+    columns={3}
+    tone="surface"
+  >
+    {latestPosts.map((post) => <PostCard post={post} level={3} />)}
+  </FeaturedRail>
+
+  {
+    recentRoles.length > 0 && (
+      <Section id="experience" spacing="default" labelledby="experience-heading">
+        <SectionHeader
+          title="Recent experience"
+          eyebrow="Career"
+          lede="A timeline of my contributions to academic and industrial AI labs."
+          level={2}
+          size="lg"
+          id="experience-heading"
+        >
+          <Btn slot="action" href="/experience" variant="ghost" size="sm" iconEnd="arrow-right">
+            Full timeline
+          </Btn>
+        </SectionHeader>
+
+        <div class="timeline">
+          <ExperienceTimeline roles={recentRoles} level={3} />
+        </div>
+      </Section>
+    )
+  }
+
+  {
+    allSkills.length > 0 && (
+      <Section id="skills" spacing="default" tone="surface" labelledby="skills-heading">
+        <SectionHeader title="Skills" eyebrow="Toolkit" level={2} size="lg" id="skills-heading" />
+
+        <div class="skills">
+          {allSkills.map((group) => (
+            <Card as="section" padding="lg" aria-labelledby={`home-skills-${group.data.id}`}>
+              <h3 class="overline" id={`home-skills-${group.data.id}`}>
+                {group.data.category}
+              </h3>
+              <ul class="items">
+                {group.data.items.map((item) => (
+                  <li>
+                    <Pill tone="outline" size="sm">
+                      {item}
+                    </Pill>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ))}
+        </div>
+      </Section>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .hero {
+    max-inline-size: var(--measure);
+  }
+
+  .availability {
+    margin-block-end: 1.5rem;
+  }
+
+  .availability .dot {
+    inline-size: 0.375rem;
+    block-size: 0.375rem;
+    border-radius: 50%;
+    background-color: currentColor;
+  }
+
+  .name {
+    font-size: var(--fs-4xl);
+    line-height: var(--lh-tight);
+  }
+
+  .headline {
+    margin-block-start: 0.5rem;
+    font-family: var(--ff-display);
+    font-size: var(--fs-xl);
+    color: var(--ink-2);
+    text-wrap: balance;
+  }
+
+  .tagline {
+    margin-block-start: 1.25rem;
+    font-size: var(--fs-lg);
+    line-height: var(--lh-prose);
+    color: var(--ink-2);
+  }
+
+  .where {
+    display: flex;
+    align-items: center;
+    gap: 0.4375rem;
+    margin-block-start: 1rem;
+    font-size: var(--fs-sm);
+    color: var(--ink-3);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    margin-block-start: 2rem;
+  }
+
+  .timeline {
+    max-inline-size: var(--content-max);
+  }
+
+  .skills {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (min-width: 48rem) {
+    .skills {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .skills {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+  }
+</style>

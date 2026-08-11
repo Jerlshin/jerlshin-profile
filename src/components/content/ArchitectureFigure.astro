@@ -1,0 +1,84 @@
+---
+/**
+ * ArchitectureFigure — a project's architecture diagram.
+ *
+ * Takes the whole `architecture` object from the schema rather than loose
+ * props, because §4.3 already made `alt` non-optional inside it:
+ *
+ *     architecture: z.object({
+ *       diagram: image(),
+ *       alt: z.string(),        // required — no .optional() here
+ *       caption: z.string().optional(),
+ *     }).optional()
+ *
+ * Passing the object through means the build-time guarantee travels with the
+ * data. There is no prop signature on this component that could accept a
+ * diagram without alt text, so the rule cannot be bypassed by a caller.
+ *
+ * The image comes from `image()` in the schema, which resolves the relative
+ * path at build time and carries intrinsic dimensions — so the figure reserves
+ * its box before the bytes arrive (risk #11).
+ */
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+
+type Architecture = NonNullable<CollectionEntry<'projects'>['data']['architecture']>;
+
+interface Props {
+  architecture: Architecture;
+  /** Heading above the figure. Pass null to render the figure bare. */
+  heading?: string | null;
+  class?: string;
+}
+
+const { architecture, heading = 'Architecture', class: className } = Astro.props;
+const { diagram, alt, caption } = architecture;
+---
+
+<figure class:list={['arch', className]}>
+  {heading && <p class="overline heading">{heading}</p>}
+  <div class="frame">
+    <Image
+      src={diagram}
+      alt={alt}
+      widths={[640, 960, 1280].filter((w) => w <= diagram.width)}
+      sizes="(min-width: 64rem) 60rem, 100vw"
+      loading="lazy"
+      decoding="async"
+    />
+  </div>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .arch {
+    margin-block: var(--space-block);
+  }
+
+  .heading {
+    margin-block-end: 0.625rem;
+  }
+
+  .frame {
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    /* Architecture diagrams are almost always drawn on white. A tinted frame
+       in dark mode keeps a transparent PNG from becoming an invisible one. */
+    background-color: var(--surface);
+  }
+
+  .frame :global(img) {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+  }
+
+  figcaption {
+    margin-block-start: 0.625rem;
+    color: var(--ink-3);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    text-wrap: pretty;
+  }
+</style>

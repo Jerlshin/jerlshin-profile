@@ -1,0 +1,58 @@
+---
+/**
+ * /projects — L2 archive.
+ *
+ * The lede is §5.8's App.jsx:687 subtitle, captured rather than lost.
+ */
+import ArchiveLayout from '../../layouts/ArchiveLayout.astro';
+import ProjectCard from '../../components/content/ProjectCard.astro';
+import TagFilter from '../../components/content/TagFilter.astro';
+import EmptyState from '../../components/content/EmptyState.astro';
+import { projects } from '../../lib/collections.ts';
+import { facets } from '../../lib/tags.ts';
+
+const all = await projects();
+const tagFacets = facets(all);
+---
+
+<ArchiveLayout
+  title="Projects"
+  heading="Projects"
+  eyebrow="Engineering"
+  description="Applied work in multimodal learning, graph representations, edge inference, and AI orchestration."
+  lede="Showcasing innovation in multimodal learning and orchestrating AI pipelines."
+  crumbs={[{ label: 'Projects' }]}
+  gridId="projects-grid"
+  columns={2}
+  count={all.length}
+  countLabel={all.length === 1 ? 'project' : 'projects'}
+>
+  <TagFilter
+    slot="filter"
+    facets={tagFacets}
+    label="Filter by tag"
+    target="projects-grid"
+    emptyId="projects-empty"
+  />
+
+  {all.map((project) => <ProjectCard project={project} level={2} />)}
+
+  {
+    all.length === 0 ? (
+      <EmptyState
+        class="archive-empty"
+        title="No projects published yet"
+        body="Project entries live in src/content/projects/<slug>/index.mdx."
+        icon="folder"
+      />
+    ) : (
+      <EmptyState
+        id="projects-empty"
+        class="archive-empty"
+        hidden
+        title="No projects match those tags"
+        body="Selecting more tags narrows the results. Clear one to widen them again."
+      />
+    )
+  }
+</ArchiveLayout>

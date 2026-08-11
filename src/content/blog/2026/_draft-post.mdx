@@ -1,0 +1,22 @@
+---
+# This file is INVISIBLE TO THE BUILD, and deliberately so.
+#
+# content.config.ts globs blog with `**/[^_]*.{md,mdx}`, so an underscore prefix
+# excludes a file from the loader entirely — it is never parsed, never
+# validated, and can never generate a route. That is the first of the two
+# independent guards in risk #13; the second is `posts()` filtering `data.draft`
+# under import.meta.env.PROD.
+#
+# The frontmatter below is deliberately INVALID against the blog schema (the
+# description is far too short, and `tags` is empty). If this file were ever
+# picked up by the loader, the build would fail immediately and by name rather
+# than quietly publishing an unfinished post. That is the point of leaving it
+# here: it is a live assertion that the exclusion works.
+title: 'Draft — not published'
+description: 'too short'
+pubDate: 2026-05-01
+tags: []
+---
+
+If you can read this on the deployed site, the `[^_]` glob in content.config.ts has stopped
+working. Nothing else in the build would have told you.

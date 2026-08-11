@@ -1,0 +1,76 @@
+---
+/**
+ * /about — the long-form bio.
+ *
+ * The body comes from src/content/about.mdx, not from a string in this file
+ * (§5.1): the v1 site stored it as `profile.about`, a fixed three-sentence
+ * value that could not grow into paragraphs without a code change. As MDX it
+ * can grow, and it can use the same six components every other body has.
+ *
+ * SiteFooter already links here, so this page existing is also what stops that
+ * link from being the site's first dead one.
+ */
+import { getEntry, render } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import Prose from '../components/primitives/Prose.astro';
+import Btn from '../components/primitives/Btn.astro';
+import { mdxComponents } from '../components/mdx/index.ts';
+import { site } from '../config/site.ts';
+import { KIND } from '../lib/kinds.ts';
+
+const about = await getEntry('pages', 'about');
+
+// A missing entry would otherwise render an empty page. The collection makes
+// this unreachable in practice; the throw is what keeps it that way if someone
+// renames the file.
+if (!about) {
+  throw new Error('about.astro: src/content/about.mdx is missing from the `pages` collection.');
+}
+
+const { Content } = await render(about);
+---
+
+<PageLayout
+  title={about.data.title}
+  description={about.data.description}
+  lede={about.data.lede}
+  eyebrow="Profile"
+  crumbs={[{ label: 'About' }]}
+  searchKind={KIND.page}
+  width="content"
+>
+  <Prose>
+    <Content components={mdxComponents} />
+  </Prose>
+
+  <div class="contact" data-pagefind-ignore>
+    <p class="overline">Get in touch</p>
+    <div class="actions">
+      <Btn href={`mailto:${site.email}`} variant="primary" iconStart="mail">Email</Btn>
+      <Btn href={site.socials.linkedin} iconStart="linkedin" external>LinkedIn</Btn>
+      <Btn href={site.socials.github} iconStart="github" external>GitHub</Btn>
+      {
+        site.cv && (
+          <Btn href={site.cv} variant="ghost" iconStart="file-down" data-astro-prefetch="false">
+            Curriculum vitae
+          </Btn>
+        )
+      }
+    </div>
+  </div>
+</PageLayout>
+
+<style>
+  .contact {
+    margin-block-start: var(--space-section);
+    padding-block-start: var(--space-block);
+    border-block-start: 1px solid var(--line);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-block-start: 0.75rem;
+  }
+</style>

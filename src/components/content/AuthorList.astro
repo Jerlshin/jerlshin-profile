@@ -1,0 +1,88 @@
+---
+/**
+ * AuthorList — the byline for a paper.
+ *
+ * Three things it gets right that a `.join(', ')` does not:
+ *
+ *  1. THE SITE OWNER IS MARKED, once, by `isMe` — the schema's third refine
+ *     guarantees exactly one author carries it, so this cannot render two bold
+ *     names or none. It uses <strong>, not a colour, so the emphasis survives
+ *     in print, in a plain-text reader, and for anyone who cannot see the
+ *     weight difference.
+ *  2. AN INCOMPLETE LIST SAYS SO. `authorsTruncated` renders a real "et al."
+ *     Listing three of seven authors with no marker is a false claim about
+ *     authorship, and it is the kind of claim that is never noticed because
+ *     nothing about it looks wrong.
+ *  3. THE SEPARATORS ARE aria-hidden. A screen reader announces "Jerlshin J G,
+ *     R. Sarkar", not "Jerlshin J G comma R. Sarkar comma".
+ */
+import type { CollectionEntry } from 'astro:content';
+import type { HTMLAttributes } from 'astro/types';
+
+type Author = CollectionEntry<'research'>['data']['authors'][number];
+
+interface Props extends HTMLAttributes<'p'> {
+  authors: Author[];
+  /** Renders a trailing "et al." — set from `data.authorsTruncated`. */
+  truncated?: boolean;
+  /** Cap the visible names; the rest collapse into "et al.". */
+  max?: number;
+  size?: 'sm' | 'md';
+}
+
+const { authors, truncated = false, max, size = 'md', class: className, ...rest } = Astro.props;
+
+const shown = max ? authors.slice(0, max) : authors;
+// Either the data says the list is incomplete, or this component just made it
+// so. Both produce the same visible claim, so both must set the same flag.
+const etAl = truncated || shown.length < authors.length;
+---
+
+<p class:list={['authors', `size-${size}`, className]} {...rest}>
+  {
+    shown.map((author, i) => (
+      <>
+        {i > 0 && <span aria-hidden="true">, </span>}
+        <span class:list={['author', { me: author.isMe }]}>
+          {author.isMe ? <strong>{author.name}</strong> : author.name}
+        </span>
+      </>
+    ))
+  }
+  {
+    etAl && (
+      <>
+        <span aria-hidden="true">, </span>
+        <em class="etal" title="Author list is incomplete on this page">
+          et al.
+        </em>
+      </>
+    )
+  }
+</p>
+
+<style>
+  .authors {
+    color: var(--ink-2);
+    line-height: var(--lh-normal);
+    text-wrap: pretty;
+  }
+
+  .size-sm {
+    font-size: var(--fs-sm);
+  }
+
+  .size-md {
+    font-size: var(--fs-base);
+  }
+
+  .author strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .etal {
+    color: var(--ink-3);
+    font-style: italic;
+  }
+</style>

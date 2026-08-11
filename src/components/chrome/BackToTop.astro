@@ -1,0 +1,72 @@
+---
+/**
+ * BackToTop — appears once the page has scrolled.
+ *
+ * It is an <a href="#top">, not a button. The bare "#top" fragment is defined
+ * by HTML to scroll to the start of the document with no element to match, so
+ * the control works with scripting disabled, moves keyboard focus where it
+ * should, and inherits the smooth-scroll (and reduced-motion opt-out) already
+ * set in global.css. No scroll handler is involved in the navigation itself.
+ *
+ * The visibility toggle uses an IntersectionObserver against the one-pixel
+ * sentinel BaseLayout renders at the top of <body>. A scroll listener would
+ * fire on every frame — v1 had exactly that, unthrottled, calling setState.
+ * An observer fires twice per page: once leaving the top, once returning.
+ */
+import Icon from '../primitives/Icon.astro';
+---
+
+<a id="back-to-top" href="#top" class="back-to-top" hidden>
+  <Icon name="arrow-up" size="1.125rem" />
+  <span class="sr-only">Back to top</span>
+</a>
+
+<script>
+  const button = document.getElementById('back-to-top');
+  const sentinel = document.getElementById('top-sentinel');
+
+  if (button && sentinel) {
+    // Visible exactly when the top of the document is not.
+    new IntersectionObserver(
+      ([entry]) => {
+        if (entry) button.hidden = entry.isIntersecting;
+      },
+      { rootMargin: '240px 0px 0px 0px' },
+    ).observe(sentinel);
+  }
+</script>
+
+<style>
+  .back-to-top {
+    position: fixed;
+    inset-block-end: 1rem;
+    inset-inline-end: 1rem;
+    z-index: var(--z-back-to-top);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--tap);
+    block-size: var(--tap);
+    color: var(--ink-2);
+    background-color: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-2);
+    transition:
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
+  }
+
+  .back-to-top:hover {
+    color: var(--accent);
+    border-color: var(--control);
+  }
+
+  /* Clear the iOS home indicator, and sit above a wider gutter on desktop. */
+  @media (min-width: 40rem) {
+    .back-to-top {
+      inset-block-end: max(1.5rem, env(safe-area-inset-bottom));
+      inset-inline-end: 1.5rem;
+    }
+  }
+</style>

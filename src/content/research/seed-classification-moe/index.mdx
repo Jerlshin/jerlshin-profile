@@ -1,0 +1,52 @@
+---
+title: 'Hierarchical Deep Learning for Fine-Grained Seed Classification: A Self-Supervised and Mixture-of-Experts Approach'
+authors:
+  - name: 'Jerlshin J G'
+    isMe: true
+authorsTruncated: true
+venue:
+  name: 'Expert Systems with Applications'
+  short: 'ESWA'
+  kind: 'journal'
+  year: 2025
+status: 'under-review'
+date: 2025-01-01
+abstract: 'This work addresses fine-grained seed classification with a hierarchical architecture that pairs self-supervised representation learning with a mixture-of-experts classification head. The manuscript is under review at Expert Systems with Applications; the published abstract, including the experimental protocol and quantitative results, replaces this summary on acceptance.'
+tldr: 'Hierarchical self-supervised pretraining with a mixture-of-experts head for fine-grained seed classification. Under review at ESWA.'
+topics: ['self-supervised-learning', 'mixture-of-experts', 'fine-grained-classification']
+featured: true
+order: 1
+
+# ── CONTENT STATUS ────────────────────────────────────────────────────────
+# The body below is scope, not results. Before the paper is accepted:
+#   - replace `abstract` with the published abstract
+#   - add the remaining co-authors in submission order, then set
+#     `authorsTruncated: false`
+#   - add links.doi or links.arxiv — content.config.ts REQUIRES one the
+#     moment `status` becomes `published`, so the build enforces this for you
+---
+
+<Callout type="note" title="Manuscript under review">
+  This page records the title, venue, and research scope. The abstract, results, and citation
+  details are published here when the paper is accepted.
+</Callout>
+
+## Scope
+
+Fine-grained visual classification asks a model to separate categories that differ by small,
+localised details rather than by overall shape or context. Seed cultivars are a demanding instance
+of the problem: the discriminative evidence is texture and margin detail at a scale where intra-class
+variation from lighting and orientation is comparable to the inter-class variation being measured.
+
+This work approaches that setting with two components:
+
+- **Self-supervised pretraining**, so representation learning does not depend on the size of the
+  labelled cultivar set.
+- **A mixture-of-experts classification head**, so capacity is allocated per-region of the label
+  space instead of being shared uniformly across visually dissimilar groups.
+
+## Related work on this site
+
+The multi-task and graph-based framing used in the
+[skin lesion work](/research/superpixel-graph-skin-lesion) shares the interpretability motivation,
+applied to a medical rather than an agricultural domain.

@@ -1,0 +1,172 @@
+---
+title: 'A preprocessing pipeline you can re-run'
+description: 'Making a signal pipeline idempotent, content-addressed, and honest about its own parameters — so re-running it twice is a no-op instead of a corruption.'
+pubDate: 2026-04-02
+tags: ['signal-processing', 'reproducibility', 'tooling']
+series:
+  id: 'Notes on multimodal pipelines'
+  order: 2
+math: false
+toc: true
+---
+
+[Part 1](/blog/aligning-ecg-and-video) ended on a warning: apply the alignment parameters once, to
+one stream. That is a rule a person can follow on a good day. This post is about making it a
+property of the pipeline instead.
+
+Three requirements, in the order they matter:
+
+1. Running the pipeline twice produces the same output as running it once.
+2. Every artefact records the parameters that produced it.
+3. Changing a parameter invalidates exactly the artefacts that depend on it, and no others.
+
+## The shape of the problem
+
+The naive pipeline mutates in place, which is what makes it non-idempotent:
+
+```python title="preprocess_bad.py" {6-8}
+import numpy as np
+
+def align(session_dir, offset_s, drift):
+    ecg = np.load(session_dir / "ecg.npy")
+    ts  = np.load(session_dir / "video_ts.npy")
+    # Overwrites the input. Run this twice and the offset is applied twice —
+    # with no error, because applying an offset to a valid array is valid.
+    np.save(session_dir / "video_ts.npy", ts * drift + offset_s)
+```
+
+Nothing here fails. That is the problem: the second run is as successful as the first and produces
+data that is wrong by exactly one offset.
+
+<Callout type="caution" title="The failure class">
+  Every bug in this post is silent. None of them raise, none of them warn, and all of them produce
+  output that passes a shape check. Loudness has to be designed in, because the default behaviour of
+  numeric code is to succeed.
+</Callout>
+
+## Content-addressed outputs
+
+The fix is to make the output path a function of the inputs, so that "already done" is a question
+the filesystem can answer:
+
+```python title="preprocess.py" {12-16,24} ins={20}
+import hashlib, json
+from pathlib import Path
+import numpy as np
+
+def fingerprint(**params) -> str:
+    """Stable across runs, machines, and key order — json.dumps sorts keys."""
+    blob = json.dumps(params, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(blob.encode()).hexdigest()[:12]
+
+def align(session: Path, offset_s: float, drift: float) -> Path:
+    key = fingerprint(op="align", offset_s=offset_s, drift=drift, v=2)
+    out = session / "derived" / f"video_ts.{key}.npy"
+
+    if out.exists():
+        return out            # idempotent: the second run is a no-op
+
+    ts = np.load(session / "raw" / "video_ts.npy")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    np.save(out, ts * drift + offset_s)
+    out.with_suffix(".json").write_text(
+        json.dumps({"op": "align", "offset_s": offset_s, "drift": drift, "v": 2}, indent=2)
+    )
+    return out
+```
+
+Three properties fall out of that, and none of them require discipline:
+
+- Re-running is free and safe, because the work is skipped on a path hit.
+- Changing `drift` writes a **different file**. The old one is still there, still correct for its
+  own parameters, and still referenced by anything that used it.
+- The sidecar JSON means an artefact found on disk in six months can explain itself.
+
+The `v=2` in the fingerprint is not decoration. When the _implementation_ changes without the
+parameters changing — a bug fix in the resampler — the hash must change too, or the cache serves
+output from the old code forever.
+
+<Aside label="Cache invalidation">
+  A content-addressed cache keyed only on user-facing parameters is wrong the first time you fix a
+  bug. Version the operation, not just its arguments.
+</Aside>
+
+## Declaring the run
+
+Parameters belong in a file that is diffable and reviewable, not in argv:
+
+```yaml title="sessions/s014.yaml"
+session: s014
+raw:
+  ecg: raw/ecg.npy # 512 Hz
+  video_ts: raw/video_ts.npy
+align:
+  offset_s: -1.284
+  drift: 1.0000761
+  # Estimated over 14 windows; residual sd 3.1 ms. See part 1.
+  fit:
+    windows: 14
+    residual_sd_ms: 3.1
+qc:
+  min_peak_to_sidelobe: 3.0
+```
+
+And the driver stays boring, which is the point:
+
+```bash title="run.sh" frame="terminal"
+set -euo pipefail
+
+for cfg in sessions/*.yaml; do
+  python -m pipeline.align   --config "$cfg"
+  python -m pipeline.resample --config "$cfg"
+  python -m pipeline.qc       --config "$cfg" --fail-under 3.0
+done
+```
+
+`set -euo pipefail` is the whole safety story of that script. Without `-e`, a failing QC step in the
+middle of a loop prints an error and the loop keeps going; the run ends with a zero exit code and a
+directory of partially-processed sessions.
+
+## The migration that actually happened
+
+Moving from the mutating version to the content-addressed one is mostly deletion:
+
+```diff title="pipeline/align.py"
+- def align(session_dir, offset_s, drift):
+-     ts = np.load(session_dir / "video_ts.npy")
+-     np.save(session_dir / "video_ts.npy", ts * drift + offset_s)
++ def align(session: Path, offset_s: float, drift: float) -> Path:
++     key = fingerprint(op="align", offset_s=offset_s, drift=drift, v=2)
++     out = session / "derived" / f"video_ts.{key}.npy"
++     if out.exists():
++         return out
++     ts = np.load(session / "raw" / "video_ts.npy")
++     np.save(out, ts * drift + offset_s)
++     return out
+```
+
+The `raw/` and `derived/` split is doing as much work as the hash. Once raw inputs live in a
+directory nothing writes to, the class of bug in the first listing is not a rule anyone has to
+remember — it is a path that does not exist.
+
+## What each property buys
+
+| Property              | Mechanism                          | Failure it removes                         |
+| --------------------- | ---------------------------------- | ------------------------------------------ |
+| Idempotent            | Existence check on a derived path  | Applying an offset twice                   |
+| Self-describing       | Sidecar JSON beside every artefact | Unattributable data found six months later |
+| Correctly invalidated | Version field inside the hash      | Cache serving output from pre-bugfix code  |
+| Immutable inputs      | Read-only `raw/` directory         | Any in-place mutation of source data       |
+| Loud failures         | `set -euo pipefail`, QC threshold  | A green run over half-processed sessions   |
+
+<Details summary="Does this need a workflow engine?">
+  Not at this scale. Everything above is a hash, a path, and an existence check — perhaps forty
+  lines. A workflow engine becomes worth its configuration surface when you need distributed
+  execution or a dependency graph you cannot hold in your head. Adopting one to get idempotency
+  alone means maintaining a scheduler to avoid writing `if out.exists()`.
+</Details>
+
+<Callout type="tip" title="The test that catches all of it">
+  Run the pipeline twice in CI and assert the second run produces byte-identical output and does no
+  work. It is one test, it is fast, and it fails on every regression described in this post.
+</Callout>

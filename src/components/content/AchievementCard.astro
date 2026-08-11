@@ -1,0 +1,121 @@
+---
+/**
+ * AchievementCard — one award, hackathon placing, competition result,
+ * scholarship, leadership role, or certification.
+ *
+ * The `kind` enum is what finally makes certifications renderable. They are
+ * audit finding #3 — four real credentials that existed in portfolioData.json
+ * and appeared on no page, with nothing to warn anyone. Here they are simply
+ * another `kind` in the same collection, so they cannot go missing without the
+ * YAML entry itself going missing.
+ *
+ * Not a link, because an achievement has no detail page: there is nothing more
+ * to say than the card already says, and a card that navigates to a stub is
+ * worse than one that does not navigate.
+ */
+import type { CollectionEntry } from 'astro:content';
+import Card from '../primitives/Card.astro';
+import Pill from '../primitives/Pill.astro';
+import StandingBadge from './StandingBadge.astro';
+import VerifyLink from './VerifyLink.astro';
+import TagList from './TagList.astro';
+import { formatMonthYear, isoDate } from '../../lib/dates.ts';
+import { tagAttr } from '../../lib/tags.ts';
+
+type Achievement = CollectionEntry<'achievements'>;
+
+interface Props {
+  achievement: Achievement;
+  level?: 2 | 3 | 4;
+  class?: string;
+}
+
+const KIND: Record<Achievement['data']['kind'], string> = {
+  award: 'Award',
+  hackathon: 'Hackathon',
+  competition: 'Competition',
+  scholarship: 'Scholarship',
+  leadership: 'Leadership',
+  certification: 'Certification',
+};
+
+const { achievement, level = 3, class: className } = Astro.props;
+const { data } = achievement;
+const Heading = `h${level}` as const;
+---
+
+<Card
+  as="article"
+  padding="lg"
+  class:list={['achievement', className]}
+  data-tags={tagAttr(data.tags)}
+>
+  <div class="top">
+    <Pill tone="neutral" size="sm">{KIND[data.kind]}</Pill>
+    {data.standing && <StandingBadge standing={data.standing} />}
+  </div>
+
+  <Heading class="title">{data.title}</Heading>
+
+  <p class="issuer">
+    {data.issuer}
+    <span class="sep" aria-hidden="true">·</span>
+    <time datetime={isoDate(data.date)} class="tabular">{formatMonthYear(data.date)}</time>
+  </p>
+
+  <p class="description">{data.description}</p>
+
+  {data.tags.length > 0 && <TagList tags={data.tags} class="tags" label="Achievement tags" />}
+
+  <VerifyLink
+    verification={data.verification}
+    credentialId={data.credentialId}
+    subject={data.title}
+    class="verify"
+  />
+</Card>
+
+<style>
+  .achievement {
+    gap: 0.375rem;
+  }
+
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .title {
+    margin-block-start: 0.375rem;
+    font-size: var(--fs-lg);
+    line-height: var(--lh-snug);
+    text-wrap: balance;
+  }
+
+  .issuer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4375rem;
+    color: var(--ink-3);
+    font-size: var(--fs-sm);
+  }
+
+  .sep {
+    color: var(--line-strong);
+  }
+
+  .description {
+    margin-block-start: 0.5rem;
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+  }
+
+  .tags,
+  .verify {
+    margin-block-start: 0.75rem;
+  }
+</style>

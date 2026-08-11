@@ -1,0 +1,49 @@
+---
+title: 'A Vision Transformer Approach for Domain-based and General Human Action Recognition from Images'
+authors:
+  - name: 'R. Sarkar'
+  - name: 'Jerlshin J G'
+    isMe: true
+authorsTruncated: true
+venue:
+  name: 'Information Processing and Management'
+  short: 'IPM'
+  kind: 'journal'
+  year: 2025
+status: 'under-review'
+date: 2025-01-01
+abstract: 'This work studies human action recognition from single images with vision transformer backbones, evaluated both within a constrained domain and across the general, unconstrained setting where action categories are not drawn from a single source distribution. The manuscript is under review at Information Processing and Management; the published abstract, including the experimental protocol and quantitative results, replaces this summary on acceptance.'
+tldr: 'Vision transformers for still-image human action recognition, evaluated both within a single domain and across the general unconstrained setting. Under review at IPM.'
+topics: ['vision-transformers', 'human-action-recognition', 'domain-adaptation']
+featured: true
+order: 3
+
+# ── CONTENT STATUS ────────────────────────────────────────────────────────
+# The body below is scope, not results. Before the paper is accepted:
+#   - replace `abstract` with the published abstract
+#   - add the co-authors after R. Sarkar and Jerlshin J G, in submission
+#     order, then set `authorsTruncated: false`
+#   - add links.doi or links.arxiv — content.config.ts REQUIRES one the
+#     moment `status` becomes `published`, so the build enforces this for you
+---
+
+<Callout type="note" title="Manuscript under review">
+  This page records the title, venue, and research scope. The abstract, results, and citation
+  details are published here when the paper is accepted.
+</Callout>
+
+## Scope
+
+Recognising an action from a still image removes the cue that video methods lean on hardest —
+motion. What remains is pose, object context, and scene, and a model has to weigh those against each
+other differently depending on the action.
+
+The work separates two evaluation regimes that are often conflated:
+
+- **Domain-based recognition**, where the label set and the imagery come from one constrained
+  source, and a model can exploit consistent framing and context.
+- **General recognition**, where neither holds, and context that helped in the first regime becomes
+  a shortcut that actively misleads.
+
+Reporting a single aggregate number across both hides exactly the failure this separation is meant
+to expose.

@@ -1,0 +1,24 @@
+- id: 'languages-core'
+  category: 'Languages & Core'
+  order: 1
+  items: ['Python', 'Java', 'MATLAB', 'SQL', 'Bash', 'Git', 'Docker']
+- id: 'machine-learning'
+  category: 'Machine Learning'
+  order: 2
+  items: ['PyTorch', 'TensorFlow', 'Keras', 'scikit-learn', 'Hugging Face', 'Optuna', 'OpenCV']
+- id: 'ai-frameworks'
+  category: 'AI Frameworks'
+  order: 3
+  items: ['LangChain', 'LangGraph', 'Neo4j', 'RAG', 'Vertex AI', 'AWS SageMaker', 'Azure ML']
+- id: 'research-focus'
+  category: 'Research Focus'
+  order: 4
+  items:
+    [
+      'Multimodal Learning',
+      'Self-Supervised Learning',
+      'Explainable AI (XAI)',
+      'GNNs',
+      'GANs',
+      'NLP',
+    ]

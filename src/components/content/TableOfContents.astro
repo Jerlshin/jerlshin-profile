@@ -1,0 +1,153 @@
+---
+/**
+ * TableOfContents — built from the `headings` array that `render(entry)`
+ * already returns. No plugin, no second parse of the document, no client JS.
+ *
+ * That array is produced by the same pass that assigned the heading ids
+ * (rehype-slug), so a TOC link and its target cannot disagree — which is the
+ * entire failure mode of a hand-maintained contents list, and of any TOC that
+ * re-slugifies heading text with its own algorithm.
+ *
+ * Scroll-spy is DELIBERATELY ABSENT. Highlighting the current section needs an
+ * IntersectionObserver, a scroll listener, or both, on every post — a
+ * permanent cost for a decorative cue. `scroll-padding-top` in global.css
+ * already stops the sticky header from swallowing the target, which is the part
+ * that actually affects whether the link works.
+ */
+import type { MarkdownHeading } from 'astro';
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'nav'> {
+  headings: MarkdownHeading[];
+  /** Deepest level to include. h4 and below make a TOC longer than the post. */
+  maxDepth?: 2 | 3;
+  title?: string;
+}
+
+interface Node extends MarkdownHeading {
+  children: MarkdownHeading[];
+}
+
+const { headings, maxDepth = 3, title = 'On this page', class: className, ...rest } = Astro.props;
+
+/**
+ * Flat list → two levels of nesting.
+ *
+ * h3s that appear before any h2 are promoted to the top level rather than
+ * dropped. That case is a document-structure mistake, but silently discarding
+ * a heading from the contents is worse than rendering it slightly wrong: the
+ * reader would have no way to tell the section exists.
+ */
+const tree: Node[] = [];
+for (const heading of headings.filter((h) => h.depth >= 2 && h.depth <= maxDepth)) {
+  if (heading.depth === 2 || tree.length === 0) {
+    tree.push({ ...heading, children: [] });
+  } else {
+    tree[tree.length - 1].children.push(heading);
+  }
+}
+
+// A one-entry TOC is navigation to the top of a page the reader is already on.
+const worthShowing = tree.length > 1;
+---
+
+{
+  worthShowing && (
+    <nav
+      class:list={['toc', className]}
+      aria-labelledby="toc-heading"
+      data-pagefind-ignore
+      {...rest}
+    >
+      <p class="overline heading" id="toc-heading">
+        {title}
+      </p>
+      <ol class="list">
+        {tree.map((node) => (
+          <li>
+            <a href={`#${node.slug}`} class="entry">
+              {node.text}
+            </a>
+            {node.children.length > 0 && (
+              <ol class="sub">
+                {node.children.map((child) => (
+                  <li>
+                    <a href={`#${child.slug}`} class="entry sub-entry">
+                      {child.text}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+<style>
+  .toc {
+    padding: 1rem 1.125rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-2);
+  }
+
+  .heading {
+    margin-block-end: 0.625rem;
+  }
+
+  .list,
+  .sub {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .sub {
+    margin-block-start: 0.125rem;
+    padding-inline-start: 0.875rem;
+    border-inline-start: 1px solid var(--line);
+  }
+
+  .entry {
+    display: block;
+    padding-block: 0.3125rem;
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    border-radius: var(--radius-xs);
+    text-wrap: pretty;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .entry:hover {
+    color: var(--accent);
+  }
+
+  .sub-entry {
+    color: var(--ink-3);
+    font-size: var(--fs-xs);
+  }
+
+  /*
+   * In the rail (≥1440px) the TOC becomes sticky and scrolls independently.
+   * The max-height keeps a 40-heading document from running past the viewport
+   * with no way to reach the end of it.
+   */
+  @media (min-width: 90rem) {
+    .toc.in-rail {
+      position: sticky;
+      inset-block-start: calc(var(--header-h) + 1.5rem);
+      max-block-size: calc(100dvh - var(--header-h) - 4rem);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      border: 0;
+      border-inline-start: 1px solid var(--line);
+      border-radius: 0;
+      background-color: transparent;
+      padding: 0 0 0 1.125rem;
+    }
+  }
+</style>

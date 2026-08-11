@@ -1,0 +1,87 @@
+---
+/**
+ * Section — one vertical band of the page, and the only place vertical rhythm
+ * is decided. Pages compose Sections; they never set their own top/bottom
+ * padding. That is what stops the spacing drift that turns a design system
+ * back into a pile of one-off margins.
+ *
+ * `tone="surface"` tints the band to separate it from its neighbours using a
+ * token, never a gradient — §6.4's "structure over ornament".
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Container from './Container.astro';
+
+interface Props extends HTMLAttributes<'section'> {
+  /** Anchor target. Also what Nav and the legacy-hash script point at. */
+  id?: string;
+  tone?: 'plain' | 'surface';
+  spacing?: 'none' | 'compact' | 'default' | 'loose';
+  /** Container width for the inner column. `false` disables the container. */
+  width?: 'shell' | 'content' | 'prose' | 'full' | false;
+  /** Hairline above the section, for bands that share a tone. */
+  divided?: boolean;
+  labelledby?: string;
+}
+
+const {
+  id,
+  tone = 'plain',
+  spacing = 'default',
+  width = 'shell',
+  divided = false,
+  labelledby,
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+<section
+  id={id}
+  aria-labelledby={labelledby}
+  class:list={['section', `tone-${tone}`, `sp-${spacing}`, { divided }, className]}
+  {...rest}
+>
+  {
+    width === false ? (
+      <slot />
+    ) : (
+      <Container width={width}>
+        <slot />
+      </Container>
+    )
+  }
+</section>
+
+<style>
+  .section {
+    display: block;
+  }
+
+  .tone-plain {
+    background-color: transparent;
+  }
+
+  .tone-surface {
+    background-color: var(--surface-2);
+  }
+
+  .divided {
+    border-block-start: 1px solid var(--line);
+  }
+
+  .sp-none {
+    padding-block: 0;
+  }
+
+  .sp-compact {
+    padding-block: calc(var(--space-section) * 0.5);
+  }
+
+  .sp-default {
+    padding-block: var(--space-section);
+  }
+
+  .sp-loose {
+    padding-block: calc(var(--space-section) * 1.4);
+  }
+</style>

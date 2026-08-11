@@ -1,0 +1,102 @@
+---
+/**
+ * Card — a bounded surface. Deliberately NOT a link.
+ *
+ * Wrapping a whole card in an <a> forbids any other link inside it (nested
+ * interactive content is invalid HTML and unusable with a screen reader), and
+ * every card this site needs contains at least a title link plus tag links.
+ *
+ * So: set `interactive`, then give the card's title link the global
+ * `.stretched-link` class. The click target becomes the whole card, the
+ * accessible name stays the title, and tag links inside keep working because
+ * they sit above the overlay. This is the only card-click pattern used here.
+ *
+ *   <Card interactive>
+ *     <h3><a href={url} class="stretched-link">{title}</a></h3>
+ *     <TagList tags={tags} />       ← still individually clickable
+ *   </Card>
+ */
+import type { HTMLAttributes, HTMLTag } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
+  as?: HTMLTag;
+  tone?: 'surface' | 'plain' | 'inset';
+  padding?: 'none' | 'sm' | 'md' | 'lg';
+  /** Adds hover/focus affordance and the positioning a stretched link needs. */
+  interactive?: boolean;
+}
+
+const {
+  as: Tag = 'div',
+  tone = 'surface',
+  padding = 'md',
+  interactive = false,
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+<Tag class:list={['card', `tone-${tone}`, `pad-${padding}`, { interactive }, className]} {...rest}>
+  <slot />
+</Tag>
+
+<style>
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    min-inline-size: 0; /* lets a card shrink inside a grid track */
+  }
+
+  .tone-surface {
+    background-color: var(--surface);
+  }
+
+  .tone-plain {
+    background-color: transparent;
+  }
+
+  .tone-inset {
+    background-color: var(--surface-2);
+  }
+
+  .pad-none {
+    padding: 0;
+  }
+  .pad-sm {
+    padding: 0.875rem 1rem;
+  }
+  .pad-md {
+    padding: 1.25rem;
+  }
+  .pad-lg {
+    padding: 1.75rem;
+  }
+
+  .interactive {
+    transition:
+      border-color var(--dur) var(--ease),
+      background-color var(--dur) var(--ease),
+      box-shadow var(--dur) var(--ease);
+  }
+
+  /* Hover raises the border, not the card. No transform, so no repaint cost
+     and no motion for users who did not ask for any. */
+  .interactive:hover {
+    border-color: var(--control);
+    box-shadow: var(--shadow-1);
+  }
+
+  /* The focus ring belongs to the card, not the invisible overlay link — this
+     is what makes keyboard tabbing through a grid legible. */
+  .interactive:has(.stretched-link:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .interactive :global(.stretched-link:focus-visible) {
+    outline: none;
+  }
+</style>

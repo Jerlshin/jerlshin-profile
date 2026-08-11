@@ -1,0 +1,236 @@
+---
+/**
+ * JsonLd — structured data, built from schema fields rather than hand-written.
+ *
+ * THE PROP IS A DISCRIMINATED UNION OVER CONTENT ENTRIES, NOT A JSON BLOB. A
+ * component that accepted `schema={{…}}` would let any page invent its own
+ * shape, and the shapes would drift apart exactly the way `portfolioData.json`
+ * and `App.jsx` did (audit finding #2). Here a paper page passes the paper and
+ * gets whatever `ScholarlyArticle` this site has decided a paper is; changing
+ * that decision is a one-file edit that reaches every paper at once.
+ *
+ * Everything is emitted as one `@graph` with stable `@id`s, so the article
+ * nodes reference the Person and WebSite by identity instead of repeating them.
+ * That is what lets a consumer understand that the author of every paper on the
+ * site is the same person as the site's owner — which is the entire point of
+ * publishing `Person` at all.
+ *
+ * Type coverage per §6.1:
+ *   Person             sitewide (emitted by BaseHead on every page)
+ *   ScholarlyArticle   /research/[…]
+ *   BlogPosting        /blog/[…]
+ *   SoftwareSourceCode /projects/[…]
+ */
+import type { CollectionEntry } from 'astro:content';
+import { site } from '../../config/site.ts';
+import { ogPath } from '../../lib/og.ts';
+import { isoDate } from '../../lib/dates.ts';
+
+type Props =
+  /** The site's own identity. Emitted on every page by BaseHead. */
+  | { kind: 'site' }
+  | { kind: 'paper'; entry: CollectionEntry<'research'> }
+  | { kind: 'post'; entry: CollectionEntry<'blog'>; wordCount?: number }
+  | { kind: 'project'; entry: CollectionEntry<'projects'> };
+
+/**
+ * Stable node identities. Written once here so a reference can never point at
+ * an `@id` that no node declares — a dangling reference in JSON-LD produces no
+ * error anywhere, it just silently drops the relationship.
+ */
+const PERSON_ID = `${site.url}/#person`;
+const WEBSITE_ID = `${site.url}/#website`;
+
+const abs = (path: string): string => new URL(path, site.url).href;
+
+/** The canonical URL of the page this component is rendering on (risk #8). */
+const pageUrl = abs(Astro.url.pathname.replace(/\/+$/, '') || '/');
+
+type Node = Record<string, unknown>;
+
+/** Drops keys whose value is undefined, null, or an empty array. */
+const compact = (node: Node): Node =>
+  Object.fromEntries(
+    Object.entries(node).filter(
+      ([, v]) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0),
+    ),
+  );
+
+const props = Astro.props as Props;
+
+const person: Node = compact({
+  '@type': 'Person',
+  '@id': PERSON_ID,
+  name: site.name,
+  url: site.url,
+  jobTitle: site.headline,
+  description: site.tagline,
+  email: `mailto:${site.email}`,
+  // schema.org accepts Text for `address`. A PostalAddress would need the
+  // string split into locality / region / country, and inferring which comma-
+  // separated part is which is guesswork the source data does not support.
+  address: site.location,
+  sameAs: Object.values(site.socials).filter(Boolean),
+});
+
+const website: Node = {
+  '@type': 'WebSite',
+  '@id': WEBSITE_ID,
+  url: site.url,
+  name: site.name,
+  description: site.tagline,
+  inLanguage: 'en',
+  publisher: { '@id': PERSON_ID },
+  /**
+   * Declared because /search genuinely accepts `?q=` and renders results for
+   * it. A SearchAction pointing at a query string the site ignores is a lie
+   * told to a crawler, which is the same defect class as a theme toggle that
+   * does not toggle.
+   */
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${site.url}/search?q={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+/** Author objects for a paper. Named people, in the order the schema stores. */
+const authorsOf = (entry: CollectionEntry<'research'>): Node[] =>
+  entry.data.authors.map((a) =>
+    compact({
+      '@type': 'Person',
+      // The site owner is the SAME node as the sitewide Person, not a
+      // same-named copy, so a harvester can join a paper to the profile.
+      '@id': a.isMe ? PERSON_ID : undefined,
+      name: a.name,
+      affiliation: a.affiliation,
+      url: a.url,
+    }),
+  );
+
+/**
+ * THE SITE NODES ARE EMITTED ONCE PER PAGE, BY THE `site` CALL IN BaseHead.
+ *
+ * An article block only *references* `PERSON_ID` and `WEBSITE_ID`. Re-declaring
+ * them here would put a second, byte-identical copy of the Person into every
+ * detail page: consumers merge nodes by `@id` so it would parse correctly, but
+ * it is duplicated content in the document and, worse, a second place the
+ * Person is written — which is how the two copies eventually disagree.
+ */
+const graph: Node[] = props.kind === 'site' ? [person, website] : [];
+
+if (props.kind === 'paper') {
+  const { data } = props.entry;
+
+  graph.push(
+    compact({
+      '@type': 'ScholarlyArticle',
+      '@id': `${pageUrl}#article`,
+      mainEntityOfPage: pageUrl,
+      url: pageUrl,
+      headline: data.title,
+      name: data.title,
+      abstract: data.abstract,
+      description: data.tldr,
+      /**
+       * A STRICT SUBSET WHEN `authorsTruncated` IS TRUE, and there is no way to
+       * say so here — JSON-LD has no "et al.". The rendered page does say so
+       * (<AuthorList /> prints a real "et al." and lib/bibtex.ts emits `and
+       * others`), so nothing a reader sees overclaims; this node is simply
+       * incomplete until the real author lists land. Emitting no authors at all
+       * would be worse: a scholarly indexer would attribute the work to nobody.
+       * This is the concrete cost of the outstanding item in §7 Phase 2.
+       */
+      author: authorsOf(props.entry),
+      datePublished: isoDate(data.date),
+      // schema.org's vocabulary for exactly the thing v1 buried in a display
+      // string: "Expert Systems with Applications (Under Review)".
+      creativeWorkStatus: data.status,
+      isPartOf: compact({
+        '@type': 'Periodical',
+        name: data.venue.name,
+        alternateName: data.venue.short,
+        publisher: data.venue.publisher,
+      }),
+      pagination: data.venue.pages,
+      keywords: data.topics,
+      inLanguage: 'en',
+      image: abs(ogPath(`research/${props.entry.id}`)),
+      identifier: data.links.doi,
+      sameAs: [data.links.arxiv, data.links.doi].filter(Boolean),
+      codeRepository: data.links.code,
+    }),
+  );
+}
+
+if (props.kind === 'post') {
+  const { data } = props.entry;
+
+  graph.push(
+    compact({
+      '@type': 'BlogPosting',
+      '@id': `${pageUrl}#article`,
+      mainEntityOfPage: pageUrl,
+      url: pageUrl,
+      headline: data.title,
+      description: data.description,
+      author: { '@id': PERSON_ID },
+      publisher: { '@id': PERSON_ID },
+      isPartOf: { '@id': WEBSITE_ID },
+      datePublished: isoDate(data.pubDate),
+      // Only when it exists. Defaulting dateModified to pubDate would tell a
+      // crawler every post was edited on the day it was written.
+      dateModified: data.updatedDate ? isoDate(data.updatedDate) : undefined,
+      keywords: data.tags,
+      wordCount: props.wordCount,
+      inLanguage: 'en',
+      image: abs(ogPath(`blog/${props.entry.id}`)),
+    }),
+  );
+}
+
+if (props.kind === 'project') {
+  const { data } = props.entry;
+
+  graph.push(
+    compact({
+      '@type': 'SoftwareSourceCode',
+      '@id': `${pageUrl}#project`,
+      mainEntityOfPage: pageUrl,
+      url: pageUrl,
+      name: data.title,
+      description: data.summary,
+      author: { '@id': PERSON_ID },
+      dateCreated: isoDate(data.start),
+      // `end: null` means ongoing (§4.5), so there is no modification date to
+      // claim rather than a modification date of "now".
+      dateModified: data.end ? isoDate(data.end) : undefined,
+      codeRepository: data.links.repo,
+      // The display strings the project already lists. `programmingLanguage`
+      // accepts Text, so "PyTorch" is as valid here as "Python" — narrowing it
+      // to actual languages would need a second, hand-curated list.
+      programmingLanguage: data.stack,
+      keywords: data.tags,
+      creativeWorkStatus: data.status,
+      inLanguage: 'en',
+      image: abs(ogPath(`projects/${props.entry.id}`)),
+      sameAs: [data.links.live, data.links.demo, data.links.docs].filter(Boolean),
+    }),
+  );
+}
+
+/**
+ * `</script>` inside a JSON string value would end this block early and dump
+ * the remaining JSON into the document as text. Escaping `<` at the unicode
+ * level keeps the JSON byte-identical in meaning and inert in HTML.
+ */
+const json = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(
+  /</g,
+  '\\u003c',
+);
+---
+
+<script type="application/ld+json" is:inline set:html={json} />

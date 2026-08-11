@@ -1,0 +1,98 @@
+---
+/**
+ * Video — a self-hosted clip or a lazily-embedded external player.
+ *
+ * Two modes, and the default is deliberate:
+ *
+ *  - `src` (self-hosted, from public/): a native <video controls>. No third
+ *    party sees the reader, nothing is downloaded until they press play
+ *    (preload="metadata"), and there is no script on the page.
+ *  - `embed` (a provider URL): a lazily-loaded <iframe> with a real `title`.
+ *    An iframe still needs no JavaScript ON THIS PAGE, so the component keeps
+ *    the site's zero-JS property even though the provider's player has plenty
+ *    of its own.
+ *
+ * `title` is required in both modes: it is the iframe's accessible name, and
+ * the visible caption when one is not supplied separately. An untitled iframe
+ * is announced as "frame" and nothing else.
+ *
+ * `aspect` exists so the box is reserved before anything loads — an unsized
+ * embed is the same CLS failure as an unsized image (risk #11).
+ */
+interface Props {
+  /** Path to a self-hosted file under public/, e.g. "/media/demo.mp4". */
+  src?: string;
+  /** Provider embed URL, e.g. "https://www.youtube-nocookie.com/embed/…". */
+  embed?: string;
+  /** Poster frame for the self-hosted player. */
+  poster?: string;
+  /** Required. Accessible name, and the fallback caption. */
+  title: string;
+  caption?: string;
+  /** "16/9" by default. Any valid CSS aspect-ratio value. */
+  aspect?: string;
+  class?: string;
+}
+
+const { src, embed, poster, title, caption, aspect = '16 / 9', class: className } = Astro.props;
+
+if (!src && !embed) {
+  throw new Error(
+    `Video("${title}"): pass either \`src\` (self-hosted) or \`embed\` (provider URL).`,
+  );
+}
+if (src && embed) {
+  throw new Error(`Video("${title}"): pass \`src\` or \`embed\`, not both.`);
+}
+---
+
+<figure class:list={['video', className]}>
+  <div class="frame" style={`--aspect: ${aspect};`}>
+    {
+      src ? (
+        <video controls preload="metadata" poster={poster} playsinline>
+          <source src={src} />
+          {/* Real fallback text, not a shrug: it is what a reader with an
+              unsupported codec actually gets. */}
+          <p>
+            Your browser cannot play this video. <a href={src}>Download the file</a> instead.
+          </p>
+        </video>
+      ) : (
+        <iframe
+          src={embed}
+          title={title}
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allow="accelerometer; encrypted-media; picture-in-picture; web-share"
+          allowfullscreen
+        />
+      )
+    }
+  </div>
+  <figcaption>{caption ?? title}</figcaption>
+</figure>
+
+<style>
+  .video {
+    margin-block: 1.75em;
+  }
+
+  .frame {
+    position: relative;
+    aspect-ratio: var(--aspect);
+    inline-size: 100%;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-2);
+  }
+
+  .frame :global(video),
+  .frame :global(iframe) {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    border: 0;
+  }
+</style>

@@ -1,0 +1,175 @@
+---
+/**
+ * Pagination — page N of M, from Astro's `paginate()` page object.
+ *
+ * Real <a> links to real pre-rendered URLs, which is the only reason this works
+ * with scripting disabled and the only reason a crawler can reach page 3.
+ *
+ * The window of numbers is truncated with ellipses so that a hundred-page
+ * archive does not render a hundred links. First and last are always present:
+ * "jump to the end" is the one navigation an archive reader most often wants
+ * and the one a naive sliding window always removes.
+ */
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  current: number;
+  last: number;
+  /**
+   * Maps a page number to its URL. Passed in rather than read off Astro's
+   * `page.url.prev/next`, because page 1 of this blog lives at /blog and not at
+   * /blog/page/1 — Astro's own prev link would point at the second URL for the
+   * same content, which is the duplicate-URL problem of risk #8 in another
+   * shape. One function decides every href here, including prev and next.
+   */
+  hrefFor: (n: number) => string;
+  /** How many numbers to show either side of the current one. */
+  spread?: number;
+  class?: string;
+}
+
+const { current, last, hrefFor, spread = 1, class: className } = Astro.props;
+
+const prev = current > 1 ? hrefFor(current - 1) : undefined;
+const next = current < last ? hrefFor(current + 1) : undefined;
+
+/** Page numbers to render, with `null` marking a gap. */
+const window: (number | null)[] = [];
+for (let n = 1; n <= last; n++) {
+  const keep = n === 1 || n === last || Math.abs(n - current) <= spread;
+  if (keep) {
+    window.push(n);
+  } else if (window.at(-1) !== null) {
+    window.push(null);
+  }
+}
+---
+
+{
+  last > 1 && (
+    <nav class:list={['pagination', className]} aria-label="Pagination" data-pagefind-ignore>
+      <a
+        href={prev}
+        class:list={['step', { disabled: !prev }]}
+        aria-disabled={prev ? undefined : 'true'}
+        rel="prev"
+      >
+        <Icon name="arrow-left" size="0.875rem" />
+        <span>Newer</span>
+      </a>
+
+      <ol class="numbers">
+        {window.map((n) =>
+          n === null ? (
+            <li class="gap" aria-hidden="true">
+              …
+            </li>
+          ) : (
+            <li>
+              <a
+                href={hrefFor(n)}
+                class:list={['number tabular', { current: n === current }]}
+                aria-current={n === current ? 'page' : undefined}
+                aria-label={`Page ${n}`}
+              >
+                {n}
+              </a>
+            </li>
+          ),
+        )}
+      </ol>
+
+      <a
+        href={next}
+        class:list={['step', { disabled: !next }]}
+        aria-disabled={next ? undefined : 'true'}
+        rel="next"
+      >
+        <span>Older</span>
+        <Icon name="arrow-right" size="0.875rem" />
+      </a>
+    </nav>
+  )
+}
+
+<style>
+  .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-block-start: var(--space-block);
+    padding-block-start: var(--space-block);
+    border-block-start: 1px solid var(--line);
+  }
+
+  .step,
+  .number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4375rem;
+    min-block-size: var(--tap);
+    min-inline-size: var(--tap);
+    padding-inline: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    background-color: var(--surface);
+    transition:
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
+  }
+
+  .step:hover:not(.disabled),
+  .number:hover:not(.current) {
+    color: var(--accent);
+    border-color: var(--control);
+  }
+
+  /* An unavailable step keeps its space so the number row does not shift
+     between page 1 and page 2. */
+  .disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .numbers {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .number {
+    padding-inline: 0.5rem;
+  }
+
+  .current {
+    color: var(--on-accent);
+    background-color: var(--accent);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .gap {
+    padding-inline: 0.25rem;
+    color: var(--ink-3);
+  }
+
+  /* At 360px the number row is the first thing to go: the Newer/Older steps
+     are the navigation that matters and they stay full width. */
+  @media (max-width: 26rem) {
+    .numbers {
+      display: none;
+    }
+
+    .step {
+      flex: 1;
+    }
+  }
+</style>

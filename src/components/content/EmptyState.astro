@@ -1,0 +1,64 @@
+---
+/**
+ * EmptyState — what an archive shows when it has nothing to show.
+ *
+ * It exists as a component because "nothing here" is a real state that needs
+ * designing, not an accident to be left blank. A blank region reads as a broken
+ * page; the only way a reader can tell the difference is if the page says so.
+ *
+ * Also the target of TagFilter's `#empty-state` toggle (§6.3), which is why it
+ * accepts an `id` and starts `hidden` when asked to.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '../primitives/Icon.astro';
+
+interface Props extends HTMLAttributes<'div'> {
+  title: string;
+  body?: string;
+  icon?: string;
+  /** Start hidden — for the filter's no-results state, revealed by script. */
+  hidden?: boolean;
+}
+
+const { title, body, icon = 'search-x', hidden = false, class: className, ...rest } = Astro.props;
+---
+
+<div class:list={['empty', className]} hidden={hidden} {...rest}>
+  <Icon name={icon} size="1.5rem" class="glyph" />
+  <p class="title">{title}</p>
+  {body && <p class="body">{body}</p>}
+  <slot />
+</div>
+
+<style>
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: var(--space-block) 1.5rem;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+
+  .glyph {
+    color: var(--ink-3);
+    margin-block-end: 0.25rem;
+  }
+
+  .title {
+    color: var(--ink);
+    font-family: var(--ff-display);
+    font-size: var(--fs-lg);
+    font-weight: 600;
+  }
+
+  .body {
+    max-inline-size: 44ch;
+    color: var(--ink-3);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    text-wrap: pretty;
+  }
+</style>

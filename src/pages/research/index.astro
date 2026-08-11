@@ -1,0 +1,66 @@
+---
+/**
+ * /research — L2 archive.
+ *
+ * The lede is the section subtitle that existed only as hardcoded JSX at
+ * App.jsx:700 (§5.8). Capturing it here is the difference between porting the
+ * site and losing a line of copy nobody would notice was gone.
+ *
+ * The tag filter uses `topics` and has NO static archive routes behind it, so
+ * `linkFor` is not passed: with scripting disabled the filter is simply absent
+ * and the full archive is shown, which is the correct fallback. Blog tags get
+ * real routes (§6.3 layer 1); research topics will when there are enough papers
+ * to make thirty near-empty pages worth generating.
+ */
+import ArchiveLayout from '../../layouts/ArchiveLayout.astro';
+import PaperCard from '../../components/content/PaperCard.astro';
+import TagFilter from '../../components/content/TagFilter.astro';
+import EmptyState from '../../components/content/EmptyState.astro';
+import { papers } from '../../lib/collections.ts';
+import { facets } from '../../lib/tags.ts';
+
+const all = await papers();
+const topicFacets = facets(all);
+---
+
+<ArchiveLayout
+  title="Research"
+  heading="Research"
+  eyebrow="Publications"
+  description="Peer-reviewed and in-review contributions in multimodal learning, graph neural networks, and interpretable medical AI."
+  lede="Peer-reviewed contributions to the scientific community."
+  crumbs={[{ label: 'Research' }]}
+  gridId="research-grid"
+  columns={2}
+  count={all.length}
+  countLabel={all.length === 1 ? 'paper' : 'papers'}
+>
+  <TagFilter
+    slot="filter"
+    facets={topicFacets}
+    label="Filter by topic"
+    target="research-grid"
+    emptyId="research-empty"
+  />
+
+  {all.map((paper) => <PaperCard paper={paper} level={2} />)}
+
+  {
+    all.length === 0 ? (
+      <EmptyState
+        class="archive-empty"
+        title="No papers published yet"
+        body="Research entries live in src/content/research/<slug>/index.mdx."
+        icon="file-text"
+      />
+    ) : (
+      <EmptyState
+        id="research-empty"
+        class="archive-empty"
+        hidden
+        title="No papers match those topics"
+        body="Selecting more topics narrows the results. Clear one to widen them again."
+      />
+    )
+  }
+</ArchiveLayout>

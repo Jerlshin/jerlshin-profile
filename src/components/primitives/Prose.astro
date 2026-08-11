@@ -1,0 +1,44 @@
+---
+/**
+ * Prose — the wrapper for any long-form body: an MDX post, a paper abstract,
+ * the about page.
+ *
+ * It imports prose.css rather than global.css doing so, which means Astro only
+ * ships those bytes on pages that actually render prose. The homepage and the
+ * archives never download them.
+ *
+ * `measure` defaults to the hard 68ch cap from §6.4. That single constraint is
+ * what makes a 2560px monitor render comfortable text instead of 200-character
+ * lines — the failure mode most portfolios ship with.
+ */
+import type { HTMLAttributes, HTMLTag } from 'astro/types';
+import '../../styles/prose.css';
+
+interface Props extends HTMLAttributes<'div'> {
+  as?: HTMLTag;
+  /** `measure` = 68ch reading column. `full` = inherit the parent's width. */
+  width?: 'measure' | 'full';
+  size?: 'sm' | 'md';
+}
+
+const { as: Tag = 'div', width = 'measure', size = 'md', class: className, ...rest } = Astro.props;
+---
+
+<Tag class:list={['prose', `w-${width}`, `size-${size}`, className]} {...rest}>
+  <slot />
+</Tag>
+
+<style>
+  .w-measure {
+    max-inline-size: var(--measure);
+  }
+
+  .w-full {
+    max-inline-size: none;
+  }
+
+  .size-sm {
+    font-size: var(--fs-base);
+    line-height: var(--lh-normal);
+  }
+</style>

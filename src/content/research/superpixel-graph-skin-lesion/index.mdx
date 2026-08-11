@@ -1,0 +1,57 @@
+---
+title: 'Seeing the Skin Deeper: Interpretable Multi-Task Framework for Skin Lesion Diagnosis using Superpixel Graphs'
+authors:
+  - name: 'Jerlshin J G'
+    isMe: true
+authorsTruncated: true
+venue:
+  name: 'IEEE Access'
+  short: 'IEEE Access'
+  kind: 'journal'
+  year: 2025
+status: 'under-review'
+date: 2025-01-01
+abstract: 'This work presents an interpretable multi-task framework for skin lesion diagnosis in which a dermoscopic image is represented as a graph over superpixel regions rather than as a dense pixel grid, so that attribution can be reported at the level of clinically meaningful regions. The manuscript is under review at IEEE Access; the published abstract, including the experimental protocol and quantitative results, replaces this summary on acceptance.'
+tldr: 'Dermoscopic images as superpixel graphs, so a multi-task diagnosis model can attribute its decision to clinically meaningful regions. Under review at IEEE Access.'
+topics: ['skin-lesion-diagnosis', 'graph-neural-networks', 'explainable-ai']
+related:
+  - 'graph-multitask-medical-imaging'
+featured: true
+order: 2
+
+# ── CONTENT STATUS ────────────────────────────────────────────────────────
+# The body below is scope, not results. Before the paper is accepted:
+#   - replace `abstract` with the published abstract
+#   - add the remaining co-authors in submission order, then set
+#     `authorsTruncated: false`
+#   - add links.doi or links.arxiv — content.config.ts REQUIRES one the
+#     moment `status` becomes `published`, so the build enforces this for you
+---
+
+<Callout type="note" title="Manuscript under review">
+  This page records the title, venue, and research scope. The abstract, results, and citation
+  details are published here when the paper is accepted.
+</Callout>
+
+## Scope
+
+A convolutional model that classifies a dermoscopic image produces a saliency map over pixels. A
+clinician reasons over regions — a border segment, an area of irregular pigmentation. The gap
+between those two units of explanation is the practical reason post-hoc attribution on medical
+imaging so often fails to convince the people it is meant to convince.
+
+The framework here changes the unit of computation to match the unit of explanation:
+
+- Each image is over-segmented into **superpixels**, which are then treated as graph nodes with
+  edges encoding spatial adjacency and appearance similarity.
+- A **graph attention** backbone operates on that representation, so learned attention weights are
+  already region-level quantities rather than something reconstructed after the fact.
+- The head is **multi-task**, predicting diagnostic label alongside dermoscopic attributes, which
+  constrains the shared representation toward features that are independently reported by
+  clinicians.
+
+## Related work on this site
+
+The [graph-based multi-task project](/projects/graph-multitask-medical-imaging) is the engineering
+counterpart of this paper — the same representation, framed as an implementation rather than as a
+result.

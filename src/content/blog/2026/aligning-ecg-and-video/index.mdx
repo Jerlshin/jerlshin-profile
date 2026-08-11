@@ -1,0 +1,162 @@
+---
+title: 'Aligning ECG and video without a shared clock'
+description: 'Two devices, two clocks, no trigger line. What cross-correlation actually estimates, why a constant offset is the easy case, and how drift shows up.'
+pubDate: 2026-03-14
+tags: ['multimodal', 'signal-processing', 'synchronisation']
+series:
+  id: 'Notes on multimodal pipelines'
+  order: 1
+math: true
+toc: true
+---
+
+A wearable ECG logger samples at 512 Hz off its own oscillator. A camera records at a nominal
+30 fps off a different one. Nobody wired a trigger line between them, and the recording has already
+happened. The question is what you can recover after the fact, and — more usefully — what you
+cannot.
+
+<Callout type="note" title="Scope">
+  This post is about estimating a *time* relationship between two already-recorded streams. It is
+  not about clock synchronisation protocols, which solve a strictly easier problem by being present
+  during the recording.
+</Callout>
+
+## Two clocks, two failure modes
+
+Write the true event time as $t$. Each device reports it through its own clock:
+
+$$
+\tau_{\text{ecg}}(t) = \alpha_{\text{e}} t + \beta_{\text{e}}, \qquad
+\tau_{\text{vid}}(t) = \alpha_{\text{v}} t + \beta_{\text{v}}
+$$
+
+The relationship between the two recorded timelines is therefore affine:
+
+$$
+\tau_{\text{vid}} = \frac{\alpha_{\text{v}}}{\alpha_{\text{e}}} \tau_{\text{ecg}}
+  + \left( \beta_{\text{v}} - \frac{\alpha_{\text{v}}}{\alpha_{\text{e}}} \beta_{\text{e}} \right)
+$$
+
+Two parameters, two distinct problems:
+
+- **Offset**, the constant term. Someone pressed one button before the other. Estimating it is a
+  one-dimensional search, and it is the case almost every alignment tutorial addresses.
+- **Drift**, the ratio $\alpha_{\text{v}} / \alpha_{\text{e}}$. Consumer crystal oscillators are
+  specified around $\pm 50$ ppm, so a ratio of $1 \pm 10^{-4}$ is entirely ordinary. Over a
+  20-minute session that is $\pm 120$ ms of accumulated skew — several video frames, and more than
+  enough to destroy a beat-level correspondence at the end of a recording that looked perfectly
+  aligned at the start.
+
+<Aside label="Why this bites late">
+  Drift is invisible in a two-minute pilot recording and obvious in a forty-minute session. Pilots
+  are short. That ordering is why it is usually discovered after data collection has finished.
+</Aside>
+
+## What cross-correlation estimates
+
+Given two signals $x$ and $y$ sampled on a common grid, the standard estimator for a constant lag
+is the argmax of the cross-correlation:
+
+$$
+\hat{\delta} = \arg\max_{\delta} \sum_{n} x[n]\, y[n - \delta]
+$$
+
+Two things are worth being explicit about.
+
+First, this assumes the relationship _is_ a constant lag. Under drift, $y$ is not a shifted copy of
+$x$ — it is a shifted and time-scaled copy, and the peak both broadens and biases toward the lag
+that fits the middle of the window best. The estimate does not fail loudly; it returns a number
+that is wrong by an amount depending on window length.
+
+Second, $x$ and $y$ have to be comparable quantities. A raw ECG trace and a raw pixel intensity
+series are not. What you correlate is a pair of derived signals that respond to the same underlying
+event — for gait, a heel-strike impulse train from pose keypoints against an accelerometer
+magnitude; for anything cardiac, a QRS-derived instantaneous rate against a face-region
+photoplethysmographic estimate.
+
+<Diagram
+  alt="Two recorded timelines drawn as parallel horizontal axes with tick marks; a constant offset shifts the second axis to the right, and drift progressively widens the gap between corresponding ticks toward the right-hand side."
+  caption="A constant offset shifts every tick by the same amount. Drift widens the gap as the session goes on, which is why an alignment verified at the start can be wrong at the end."
+  minWidth="30rem"
+>
+  <svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <line x1="40" y1="46" x2="530" y2="46" stroke="currentColor" stroke-width="1.5" />
+    <line x1="40" y1="106" x2="530" y2="106" stroke="currentColor" stroke-width="1.5" />
+    <line x1="40" y1="166" x2="530" y2="166" stroke="currentColor" stroke-width="1.5" />
+
+    <g stroke="currentColor" stroke-width="2.5">
+      <line x1="80" y1="34" x2="80" y2="58" />
+      <line x1="180" y1="34" x2="180" y2="58" />
+      <line x1="280" y1="34" x2="280" y2="58" />
+      <line x1="380" y1="34" x2="380" y2="58" />
+      <line x1="480" y1="34" x2="480" y2="58" />
+    </g>
+
+    <g stroke="currentColor" stroke-width="2.5" opacity="0.65">
+      <line x1="110" y1="94" x2="110" y2="118" />
+      <line x1="210" y1="94" x2="210" y2="118" />
+      <line x1="310" y1="94" x2="310" y2="118" />
+      <line x1="410" y1="94" x2="410" y2="118" />
+      <line x1="510" y1="94" x2="510" y2="118" />
+    </g>
+
+    <g stroke="currentColor" stroke-width="2.5" opacity="0.65">
+      <line x1="86" y1="154" x2="86" y2="178" />
+      <line x1="192" y1="154" x2="192" y2="178" />
+      <line x1="300" y1="154" x2="300" y2="178" />
+      <line x1="412" y1="154" x2="412" y2="178" />
+      <line x1="528" y1="154" x2="528" y2="178" />
+    </g>
+
+    <text x="40" y="22">reference</text>
+    <text x="40" y="82">constant offset</text>
+    <text x="40" y="142">offset + drift</text>
+
+  </svg>
+</Diagram>
+
+## Estimating both parameters
+
+If you want the ratio as well as the offset, one lag estimate is not enough. Cut the session into
+$K$ windows, estimate a lag $\hat{\delta}_k$ in each at window centre $c_k$, and fit a line:
+
+$$
+\hat{\delta}_k = a\, c_k + b + \varepsilon_k
+$$
+
+The slope $a$ is the drift, the intercept $b$ is the offset at $t = 0$, and — the part that
+actually matters in practice — the **residual** $\varepsilon_k$ is your diagnostic. A well-behaved
+recording gives residuals in the low milliseconds with no structure. Residuals with visible
+structure mean the affine model is wrong, which usually means a dropped-frame event rather than a
+clock problem, and no amount of refitting will fix it.
+
+| Symptom                              | Likely cause                     | What to do                        |
+| ------------------------------------ | -------------------------------- | --------------------------------- |
+| Flat residuals, few ms               | Model fits                       | Resample, proceed                 |
+| Slope significant, residuals flat    | Ordinary oscillator drift        | Resample with the fitted ratio    |
+| Step change in residuals mid-session | Dropped frames or a buffer flush | Segment at the step, fit per part |
+| Residuals grow toward one end        | Affine model too weak            | Do not extrapolate; re-record     |
+| Peak height low in every window      | Signals are not actually coupled | Fix the derived signals first     |
+
+<Callout type="warning" title="A confident number is not a correct one">
+  `argmax` always returns something. A cross-correlation peak that is barely above the surrounding
+  floor still produces a lag estimate with no error bar attached. Check the peak-to-sidelobe ratio
+  per window and discard windows that fail it, or the line fit above will faithfully interpolate
+  through noise.
+</Callout>
+
+## Resampling, once
+
+Once $a$ and $b$ are estimated, apply them **once**, to one stream, and record them in the
+artefact. The failure I have seen most often is not a bad estimate — it is a good estimate applied
+twice by two scripts that each assumed the other had not run.
+
+<Details summary="Why resample the sparser stream">
+  Resampling the 512 Hz ECG onto the video's 30 Hz grid discards information irrecoverably.
+  Resampling video timestamps onto the ECG grid is a relabelling: the frames are unchanged and only
+  their associated times move. When one stream must be interpolated, interpolate the one whose
+  samples are cheap to place, not the one whose samples carry the signal.
+</Details>
+
+[Part 2](/blog/reproducible-preprocessing) is about making that "once" enforceable rather than
+remembered — the pipeline side of the same problem.

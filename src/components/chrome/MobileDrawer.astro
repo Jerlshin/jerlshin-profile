@@ -1,0 +1,185 @@
+---
+/**
+ * MobileDrawer — the small-viewport navigation panel.
+ *
+ * A native <dialog> opened with showModal(). The platform then provides, for
+ * free and correctly, everything a hand-rolled drawer gets wrong:
+ *   - a focus trap that actually traps, including from the address bar;
+ *   - Escape to close;
+ *   - focus returned to the trigger on close;
+ *   - inertness of the rest of the page (no aria-hidden bookkeeping);
+ *   - a ::backdrop pseudo-element with no extra DOM.
+ *
+ * The only script is open, close-on-backdrop, and close-on-desktop — well
+ * inside the ~0.40 KB the drawer is allotted in §2.8.
+ */
+import { site } from '../../config/site.ts';
+import Nav from './Nav.astro';
+import Icon from '../primitives/Icon.astro';
+import Btn from '../primitives/Btn.astro';
+---
+
+<button
+  id="drawer-open"
+  type="button"
+  class="trigger"
+  aria-label="Open navigation menu"
+  aria-haspopup="dialog"
+  aria-controls="nav-drawer"
+>
+  <Icon name="menu" size="1.25rem" />
+</button>
+
+<dialog id="nav-drawer" class="drawer" aria-label="Site navigation">
+  <div class="panel">
+    <div class="head">
+      <span class="overline">Menu</span>
+      <button id="drawer-close" type="button" class="trigger" aria-label="Close navigation menu">
+        <Icon name="x" size="1.25rem" />
+      </button>
+    </div>
+
+    <Nav variant="stack" class="drawer-nav" />
+
+    <div class="foot">
+      {
+        site.cv && (
+          <Btn
+            href={site.cv}
+            variant="secondary"
+            iconStart="file-text"
+            block
+            data-astro-prefetch="false"
+          >
+            Curriculum vitae
+          </Btn>
+        )
+      }
+      <Btn href={`mailto:${site.email}`} variant="ghost" iconStart="mail" block>Get in touch</Btn>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  const drawer = document.getElementById('nav-drawer') as HTMLDialogElement | null;
+  const open = document.getElementById('drawer-open');
+  const close = document.getElementById('drawer-close');
+
+  if (drawer) {
+    open?.addEventListener('click', () => drawer.showModal());
+    close?.addEventListener('click', () => drawer.close());
+
+    // A click that lands on the <dialog> itself, rather than on the panel
+    // inside it, is a click on the backdrop.
+    drawer.addEventListener('click', (event) => {
+      if (event.target === drawer) drawer.close();
+    });
+
+    // §6.4 removes the drawer at ≥1024px. Without this, rotating a tablet or
+    // resizing leaves a modal dialog — and its focus trap — over a layout that
+    // already shows the full nav bar.
+    const desktop = matchMedia('(min-width: 64rem)');
+    desktop.addEventListener('change', (event) => {
+      if (event.matches && drawer.open) drawer.close();
+    });
+  }
+</script>
+
+<style>
+  .trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--tap);
+    block-size: var(--tap);
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition:
+      color var(--dur-fast) var(--ease),
+      background-color var(--dur-fast) var(--ease);
+  }
+
+  .trigger:hover {
+    color: var(--ink);
+    background-color: var(--surface-2);
+  }
+
+  /* The hamburger exists only below the nav-bar breakpoint. */
+  @media (min-width: 64rem) {
+    #drawer-open {
+      display: none;
+    }
+  }
+
+  .drawer {
+    /* Reset the UA's centred-box defaults, then pin the panel to the edge. */
+    margin: 0;
+    padding: 0;
+    border: 0;
+    max-inline-size: none;
+    max-block-size: none;
+    inline-size: 100%;
+    block-size: 100%;
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .drawer::backdrop {
+    /* ::backdrop lives in the top layer and does not reliably inherit custom
+       properties from :root across engines, so the scrim is a literal. It is a
+       neutral translucent black that reads correctly over either theme — not a
+       theme-dependent colour, which §6.2 would forbid. */
+    background-color: rgb(0 0 0 / 0.5);
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-inline-start: auto;
+    inline-size: min(20rem, 88vw);
+    block-size: 100%;
+    padding: 1rem var(--gutter) 1.5rem;
+    background-color: var(--surface);
+    border-inline-start: 1px solid var(--line);
+    box-shadow: var(--shadow-2);
+    overflow-y: auto;
+    /* Clears the iOS home indicator and Android gesture bar. */
+    padding-block-end: max(1.5rem, env(safe-area-inset-bottom));
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .drawer-nav {
+    flex: 1;
+  }
+
+  .foot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-block-start: 1.5rem;
+    border-block-start: 1px solid var(--line);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .drawer[open] .panel {
+      animation: slide-in var(--dur) var(--ease);
+    }
+  }
+
+  @keyframes slide-in {
+    from {
+      transform: translateX(1rem);
+      opacity: 0;
+    }
+  }
+</style>

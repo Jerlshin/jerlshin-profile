@@ -1,0 +1,195 @@
+---
+/**
+ * PostLayout — a blog post: title, dateline, TOC, body, series, prev/next.
+ *
+ * THE TOC IS ONE DOM NODE, PLACED TWICE BY CSS. Below 1440px it sits inline
+ * above the article; at 1440px and up the same element moves into the sticky
+ * right rail via grid placement. Rendering it twice and hiding one copy — the
+ * usual shortcut — puts every heading link in the document twice, which a
+ * screen reader reads out twice and a search index counts twice.
+ *
+ * THE KATEX STYLESHEET IS GATED ON `math: true` (risk #12). It is ~23 KB plus
+ * font downloads, and roughly 90% of posts have no equations. The gate is a
+ * conditional <link> rather than a conditional import because Astro decides a
+ * page's CSS from the module graph, not from what actually rendered — see the
+ * long note in scripts/sync-katex-assets.mjs.
+ *
+ * `data-pagefind-body` wraps the article only, so the TOC, the series list, and
+ * the prev/next titles do not pollute the search index with text that belongs
+ * to other pages (§6.3).
+ */
+import type { CollectionEntry } from 'astro:content';
+import type { MarkdownHeading } from 'astro';
+import BaseLayout from './BaseLayout.astro';
+import Container from '../components/primitives/Container.astro';
+import Prose from '../components/primitives/Prose.astro';
+import Breadcrumbs from '../components/chrome/Breadcrumbs.astro';
+import PostMeta from '../components/content/PostMeta.astro';
+import TableOfContents from '../components/content/TableOfContents.astro';
+import TagList from '../components/content/TagList.astro';
+import SeriesNav from '../components/content/SeriesNav.astro';
+import PrevNext from '../components/content/PrevNext.astro';
+import MathStyles from '../components/mdx/MathStyles.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
+import type { ReadingTimeData } from '../lib/reading-time.ts';
+import { blogTagHref } from '../lib/tags.ts';
+import { ogPath } from '../lib/og.ts';
+import { isoDate } from '../lib/dates.ts';
+import { site } from '../config/site.ts';
+import { KIND } from '../lib/kinds.ts';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+  headings: MarkdownHeading[];
+  readingTime?: ReadingTimeData;
+  /** Every post in this post's series, ascending by order. */
+  seriesParts?: CollectionEntry<'blog'>[];
+  newer?: CollectionEntry<'blog'>;
+  older?: CollectionEntry<'blog'>;
+}
+
+const { post, headings, readingTime, seriesParts = [], newer, older } = Astro.props;
+const { data } = post;
+
+// `toc: false` in frontmatter is for short posts where a contents list is
+// longer than the thing it indexes. TableOfContents additionally declines to
+// render when there is only one heading.
+const showToc = data.toc;
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  type="article"
+  image={ogPath(`blog/${post.id}`)}
+  imageAlt={`${data.title} — ${site.name}`}
+  publishedTime={isoDate(data.pubDate)}
+  modifiedTime={data.updatedDate ? isoDate(data.updatedDate) : undefined}
+  canonical={data.canonical}
+>
+  <Fragment slot="head">
+    {data.math && <MathStyles />}
+    {
+      /* `wordCount` comes from the reading-time plugin, so it is the same number
+        the dateline shows rather than a second count that drifts from it. */
+    }
+    <JsonLd kind="post" entry={post} wordCount={readingTime?.words} />
+  </Fragment>
+
+  <Container width="shell" class="post">
+    <Breadcrumbs items={[{ label: 'Blog', href: '/blog' }, { label: data.title }]} class="crumbs" />
+
+    {
+      /*
+       * THE INDEXED REGION STARTS AT THE HEADER, NOT AT THE ARTICLE.
+       *
+       * Pagefind takes a record's title from the first <h1> inside a
+       * `data-pagefind-body` region, and its `date` meta from the attribute
+       * PostMeta writes — both of which live up here. With the attribute on
+       * <article> alone, every post indexed correctly and then rendered in the
+       * results list titled by its own URL. The TOC, the series list, and the
+       * prev/next block each carry their own `data-pagefind-ignore`, so
+       * widening the region does not pull in text belonging to other pages.
+       */
+    }
+    <div
+      data-pagefind-body
+      data-pagefind-meta={`kind:${KIND.post}`}
+      data-pagefind-filter={`kind:${KIND.post}`}
+    >
+      <header class="head">
+        <h1 class="title">{data.title}</h1>
+        <PostMeta
+          pubDate={data.pubDate}
+          updatedDate={data.updatedDate}
+          readingTime={readingTime}
+          draft={data.draft}
+          class="dateline"
+        />
+        <TagList tags={data.tags} hrefFor={blogTagHref} class="tags" label="Post tags" size="md" />
+      </header>
+
+      <div class:list={['layout', { 'has-rail': showToc }]}>
+        {
+          showToc && (
+            <aside class="rail">
+              <TableOfContents headings={headings} class="in-rail" />
+            </aside>
+          )
+        }
+
+        <div class="body">
+          {seriesParts.length > 1 && <SeriesNav parts={seriesParts} currentId={post.id} />}
+
+          <article>
+            <Prose>
+              <slot />
+            </Prose>
+          </article>
+
+          <PrevNext newer={newer} older={older} />
+        </div>
+      </div>
+    </div>
+  </Container>
+</BaseLayout>
+
+<style>
+  .post {
+    padding-block: var(--space-section);
+  }
+
+  .crumbs {
+    margin-block-end: var(--space-block);
+  }
+
+  .head {
+    max-inline-size: var(--measure);
+    margin-block-end: var(--space-block);
+  }
+
+  .title {
+    text-wrap: balance;
+  }
+
+  .dateline {
+    margin-block-start: 0.875rem;
+  }
+
+  .tags {
+    margin-block-start: 1rem;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-block);
+  }
+
+  .body {
+    min-inline-size: 0;
+  }
+
+  /*
+   * §6.4: the right rail only appears at 1440px, where there is genuinely
+   * surplus width. Below that the TOC is in flow above the article, which is
+   * the same element in a different grid cell — not a second copy.
+   */
+  @media (min-width: 90rem) {
+    .layout.has-rail {
+      grid-template-columns: minmax(0, 1fr) var(--rail-w);
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .layout.has-rail > .rail {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .layout.has-rail > .body {
+      grid-column: 1;
+      grid-row: 1;
+    }
+  }
+</style>

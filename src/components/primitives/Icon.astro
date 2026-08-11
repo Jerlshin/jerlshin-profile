@@ -1,0 +1,63 @@
+---
+/**
+ * Icon — the single entry point for every icon on the site.
+ *
+ * Wraps astro-icon so that:
+ *   - names are written bare (`name="github"`), the `lucide:` prefix is implied;
+ *   - icons are inert to assistive tech by default, and only become an image
+ *     with an accessible name when a `label` is passed;
+ *   - stroke width and sizing come from tokens, not from per-call magic numbers.
+ *
+ * A typo in `name` is a BUILD ERROR — astro-icon throws when the icon is not in
+ * the set. That is the point: the v1 site referenced CSS classes that did not
+ * exist and nothing complained (audit finding #5).
+ *
+ * Icons are decoration on top of text. If an icon is the ONLY content of a
+ * control, the control needs the label — see Btn and ThemeToggle.
+ */
+import { Icon as AstroIcon } from 'astro-icon/components';
+
+interface Props {
+  /** Icon name. Bare names resolve against the lucide set. */
+  name: string;
+  /** Edge length in px, or any CSS length. Inherits the text size by default. */
+  size?: number | string;
+  /** Accessible name. Omit for decorative icons (the default). */
+  label?: string;
+  class?: string;
+}
+
+const { name, size = '1em', label, class: className, ...rest } = Astro.props;
+
+const qualified = name.includes(':') ? name : `lucide:${name}`;
+const dimension = typeof size === 'number' ? `${size}px` : size;
+
+// Decorative icons are removed from the accessibility tree entirely; labelled
+// ones are announced as images. There is no third, ambiguous state.
+const a11y = label
+  ? { role: 'img' as const, title: label }
+  : { 'aria-hidden': 'true' as const, role: 'presentation' as const };
+---
+
+<AstroIcon
+  name={qualified}
+  width={dimension}
+  height={dimension}
+  focusable="false"
+  class:list={['icon', className]}
+  {...a11y}
+  {...rest}
+/>
+
+<style>
+  .icon {
+    display: inline-block;
+    flex: none;
+    vertical-align: -0.125em; /* sits on the text baseline, not below it */
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+</style>

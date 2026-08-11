@@ -1,0 +1,80 @@
+---
+/**
+ * Figure — an image with a caption, in MDX.
+ *
+ * Takes an IMPORTED ImageMetadata, not a string path. That is the load-bearing
+ * choice: `astro:assets` then knows the intrinsic dimensions and emits
+ * width/height, so the image reserves its own space and cannot cause layout
+ * shift (risk #11). A string src would ship an unsized <img>, which is the
+ * single most common cause of a failed CLS score.
+ *
+ * `alt` is a required prop with no default. An image whose alt text is optional
+ * gets shipped without it — the same discipline problem the `coverAlt` Zod
+ * refinements exist to remove (§4.2). Decorative images pass `alt=""`
+ * explicitly, which is a decision rather than an omission.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata;
+  /** Required. Pass "" for a purely decorative image. */
+  alt: string;
+  /** Visible caption. Distinct from alt: the caption is for everyone. */
+  caption?: string;
+  /** Break out of the prose measure for a wide diagram or screenshot. */
+  wide?: boolean;
+  /** Above-the-fold images only. Everything else stays lazy. */
+  priority?: boolean;
+  widths?: number[];
+  class?: string;
+}
+
+const { src, alt, caption, wide = false, priority = false, widths, class: className } = Astro.props;
+
+// Never upscale: cap the candidate widths at the source's own width, or the
+// browser downloads a "larger" file with no additional detail in it.
+const candidates = (widths ?? [640, 960, 1280]).filter((w) => w <= src.width);
+const sizes = wide ? '(min-width: 64rem) 60rem, 100vw' : `(min-width: 64rem) var(--measure), 100vw`;
+---
+
+<figure class:list={['figure', { wide }, className]}>
+  <Image
+    src={src}
+    alt={alt}
+    widths={candidates.length ? candidates : [src.width]}
+    sizes={sizes}
+    loading={priority ? 'eager' : 'lazy'}
+    fetchpriority={priority ? 'high' : 'auto'}
+    decoding={priority ? 'sync' : 'async'}
+  />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .figure {
+    margin-block: 1.75em;
+  }
+
+  .figure img {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface);
+  }
+
+  /*
+   * Widens past the prose measure without breaking out of the page gutter.
+   * The negative margin is capped by the available viewport width, so at 360px
+   * this collapses to zero rather than pushing the layout sideways — the page
+   * body must never scroll horizontally (§6.4).
+   */
+  @media (min-width: 64rem) {
+    .wide {
+      inline-size: min(60rem, calc(100vw - 2 * var(--gutter)));
+      margin-inline-start: calc((var(--measure) - min(60rem, 100vw - 2 * var(--gutter))) / 2);
+    }
+  }
+</style>

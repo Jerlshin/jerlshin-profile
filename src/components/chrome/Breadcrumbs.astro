@@ -1,0 +1,100 @@
+---
+/**
+ * Breadcrumbs — the L1 → L2 → L3 trail on archive and detail pages.
+ *
+ * The final crumb is the current page: it is plain text with aria-current,
+ * never a link to itself. Linking a page to itself is a dead control, and the
+ * separators are aria-hidden so a screen reader hears "Home, Research, …"
+ * instead of "Home slash Research slash".
+ *
+ * Phase 6 adds the matching BreadcrumbList JSON-LD via <JsonLd />; the markup
+ * here is already the structure that will feed it.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '../primitives/Icon.astro';
+
+export interface Crumb {
+  label: string;
+  /** Omit on the last crumb. */
+  href?: string;
+}
+
+interface Props extends HTMLAttributes<'nav'> {
+  items: Crumb[];
+}
+
+// `...rest` also carries a parent component's scope attribute — see Nav.astro.
+const { items, class: className, ...rest } = Astro.props;
+
+// "Home" is implicit on every trail, so callers never have to remember it.
+const trail: Crumb[] = [{ label: 'Home', href: '/' }, ...items];
+---
+
+<nav aria-label="Breadcrumb" class:list={['crumbs', className]} data-pagefind-ignore {...rest}>
+  <ol class="list">
+    {
+      trail.map((crumb, i) => {
+        const last = i === trail.length - 1;
+        return (
+          <li class="item">
+            {i > 0 && <Icon name="chevron-right" size="0.875rem" class="sep" />}
+            {last || !crumb.href ? (
+              <span aria-current="page" class="current">
+                {crumb.label}
+              </span>
+            ) : (
+              <a href={crumb.href} class="crumb">
+                {crumb.label}
+              </a>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>
+
+<style>
+  .list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: var(--fs-sm);
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-inline-size: 0;
+  }
+
+  .sep {
+    color: var(--ink-3);
+  }
+
+  .crumb {
+    padding-block: 0.25rem;
+    color: var(--ink-3);
+    border-radius: var(--radius-xs);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .crumb:hover {
+    color: var(--accent);
+  }
+
+  .current {
+    color: var(--ink-2);
+    /* A long paper title must ellipsis rather than wrap the trail onto three
+       lines at 360px. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-inline-size: 22ch;
+  }
+</style>

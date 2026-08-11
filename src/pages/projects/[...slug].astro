@@ -1,0 +1,25 @@
+---
+/**
+ * /projects/[...slug] — L3 project case study.
+ */
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import ProjectLayout from '../../layouts/ProjectLayout.astro';
+import { mdxComponents } from '../../components/mdx/index.ts';
+import { projects } from '../../lib/collections.ts';
+
+export const getStaticPaths = (async () => {
+  const all = await projects();
+  return all.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}) satisfies GetStaticPaths;
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+---
+
+<ProjectLayout project={project}>
+  <Content components={mdxComponents} />
+</ProjectLayout>

@@ -1,0 +1,105 @@
+---
+/**
+ * PageLayout — a static page: /about, and anything else that is a title, a
+ * lede, and a body.
+ *
+ * It exists so that a page never repeats the <h1> + breadcrumb + spacing
+ * arrangement by hand. Every page that does gets it slightly differently, and
+ * within a year the site has four page headers.
+ *
+ * The <h1> is rendered HERE, not by the page, which is what guarantees exactly
+ * one per document — the rank error that is invisible until an accessibility
+ * audit finds it.
+ */
+import BaseLayout from './BaseLayout.astro';
+import Container from '../components/primitives/Container.astro';
+import Breadcrumbs, { type Crumb } from '../components/chrome/Breadcrumbs.astro';
+import type { KindLabel } from '../lib/kinds.ts';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Optional one-line lede under the <h1>. */
+  lede?: string;
+  eyebrow?: string;
+  /** Trail without "Home" — it is prepended by Breadcrumbs. */
+  crumbs?: Crumb[];
+  width?: 'shell' | 'content' | 'prose';
+  /**
+   * Opt in to the search index, with the facet this page files under. Unset —
+   * as on /search and /404, which have nothing of their own to find — the page
+   * produces no Pagefind record. Same contract as ArchiveLayout.
+   */
+  searchKind?: KindLabel;
+  image?: string;
+  imageAlt?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  lede,
+  eyebrow,
+  crumbs,
+  width = 'content',
+  searchKind,
+  image,
+  imageAlt,
+  noindex,
+} = Astro.props;
+---
+
+<BaseLayout {title} {description} {image} {imageAlt} {noindex}>
+  <slot name="head" slot="head" />
+
+  <Container width={width} class="page">
+    {crumbs && crumbs.length > 0 && <Breadcrumbs items={crumbs} class="crumbs" />}
+
+    {
+      /* The heading is inside the indexed region so Pagefind takes the page's
+        <h1> as the result title, rather than falling back to its URL. */
+    }
+    <div
+      data-pagefind-body={searchKind ? true : undefined}
+      data-pagefind-meta={searchKind ? `kind:${searchKind}` : undefined}
+      data-pagefind-filter={searchKind ? `kind:${searchKind}` : undefined}
+    >
+      <header class="head">
+        {eyebrow && <p class="overline">{eyebrow}</p>}
+        <h1 class="title">{title}</h1>
+        {lede && <p class="lede">{lede}</p>}
+      </header>
+
+      <slot />
+    </div>
+  </Container>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-section);
+  }
+
+  .crumbs {
+    margin-block-end: var(--space-block);
+  }
+
+  .head {
+    margin-block-end: var(--space-block);
+  }
+
+  .title {
+    margin-block-start: 0.5rem;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin-block-start: 0.875rem;
+    max-inline-size: var(--measure);
+    color: var(--ink-2);
+    font-size: var(--fs-lg);
+    line-height: var(--lh-prose);
+    text-wrap: pretty;
+  }
+</style>

@@ -1,0 +1,34 @@
+---
+/**
+ * /research/[...slug] — L3 paper detail.
+ *
+ * `[...slug]` rather than `[slug]` because entries are colocated directories
+ * (§3.1) whose ids can contain a separator once a paper is nested by year. The
+ * rest parameter keeps that possible without a route change later.
+ *
+ * MDX components are passed to <Content /> rather than imported in each file:
+ * MDX compiles an undefined capitalised tag into a lookup on the `components`
+ * prop, so `<Callout>` works in any paper body with no import line, and a tag
+ * that is NOT in the map fails the build by name (src/components/mdx/index.ts).
+ */
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import PaperLayout from '../../layouts/PaperLayout.astro';
+import { mdxComponents } from '../../components/mdx/index.ts';
+import { papers } from '../../lib/collections.ts';
+
+export const getStaticPaths = (async () => {
+  const all = await papers();
+  return all.map((paper) => ({
+    params: { slug: paper.id },
+    props: { paper },
+  }));
+}) satisfies GetStaticPaths;
+
+const { paper } = Astro.props;
+const { Content } = await render(paper);
+---
+
+<PaperLayout paper={paper}>
+  <Content components={mdxComponents} />
+</PaperLayout>

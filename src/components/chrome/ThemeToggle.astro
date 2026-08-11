@@ -1,0 +1,108 @@
+---
+/**
+ * ThemeToggle — flips [data-theme] on <html> and remembers the choice.
+ *
+ * Two deliberate properties, both reactions to audit finding #4 (a control that
+ * claimed to work and did not):
+ *
+ * 1. THE CONTROL CANNOT LIE. It is `display: none` until <html> carries a
+ *    [data-theme] attribute, and only the inline script in BaseLayout stamps
+ *    that. No script, no toggle — instead of a visible button that silently
+ *    does nothing. This costs zero bytes; it is one CSS selector.
+ *
+ * 2. IT WRITES THE VALUE IT APPLIED. `App.jsx:384` wrote 'light' down both
+ *    branches of its if/else, so the choice never survived a reload. Here the
+ *    same `next` variable is applied and persisted, so the two cannot diverge.
+ *
+ * Both icons ship in the HTML and CSS chooses between them, because the server
+ * cannot know the visitor's theme. Swapping icons in JS would reintroduce a
+ * flash on the control itself.
+ */
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<button
+  id="theme-toggle"
+  type="button"
+  class:list={['theme-toggle', className]}
+  aria-label="Switch theme"
+  title="Switch theme"
+>
+  {
+    /* Wrapper spans, not classes on <Icon>: the show/hide rule then lives on an
+       element this component owns, instead of competing with Icon's own scoped
+       `display` declaration at equal specificity. */
+  }
+  <span class="glyph to-light"><Icon name="sun" size="1.125rem" /></span>
+  <span class="glyph to-dark"><Icon name="moon" size="1.125rem" /></span>
+</button>
+
+<script>
+  const root = document.documentElement;
+  const toggle = document.getElementById('theme-toggle');
+
+  toggle?.addEventListener('click', () => {
+    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    root.style.colorScheme = next;
+    try {
+      // The applied value, not a hardcoded one. See the note above.
+      localStorage.setItem('theme', next);
+    } catch {
+      // Storage blocked: the flip still applies for this page view.
+    }
+  });
+</script>
+
+<style>
+  .theme-toggle {
+    /* Hidden until BaseLayout's script proves JavaScript is running. */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--tap);
+    block-size: var(--tap);
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition:
+      color var(--dur-fast) var(--ease),
+      background-color var(--dur-fast) var(--ease);
+  }
+
+  :global(html[data-theme]) .theme-toggle {
+    display: inline-flex;
+  }
+
+  .theme-toggle:hover {
+    color: var(--ink);
+    background-color: var(--surface-2);
+  }
+
+  /* Show the glyph for the theme the click would switch TO: a moon while the
+     page is light, a sun while it is dark. */
+  .glyph {
+    display: flex;
+  }
+
+  .to-light {
+    display: none;
+  }
+
+  :global(html[data-theme='dark']) .to-light {
+    display: flex;
+  }
+
+  :global(html[data-theme='dark']) .to-dark {
+    display: none;
+  }
+</style>

@@ -1,0 +1,73 @@
+---
+/**
+ * /achievements — L2 archive: awards, competition placings, leadership, and
+ * certifications.
+ *
+ * This page is the resolution of audit finding #3. Four certifications existed
+ * in portfolioData.json and rendered nowhere, with no error and no warning —
+ * they were simply invisible. They are now the same `kind` in the same
+ * collection as everything else on this page, so the only way for them to go
+ * missing is for the YAML entry to go missing.
+ *
+ * (They are still absent from achievements.yaml pending a verification URL or a
+ * credential ID for each, which §4.5's refine requires and which no script can
+ * invent. The TODO block at the end of that file records the four titles.)
+ */
+import ArchiveLayout from '../layouts/ArchiveLayout.astro';
+import AchievementCard from '../components/content/AchievementCard.astro';
+import TagFilter from '../components/content/TagFilter.astro';
+import EmptyState from '../components/content/EmptyState.astro';
+import { awards } from '../lib/collections.ts';
+import { facets } from '../lib/tags.ts';
+import { KIND } from '../lib/kinds.ts';
+
+const all = await awards();
+const tagFacets = facets(all);
+---
+
+<ArchiveLayout
+  title="Achievements"
+  heading="Achievements"
+  eyebrow="Recognition"
+  description="Hackathon and competition results, leadership roles, and verified certifications."
+  lede="Competition results, leadership, and credentials — each with its standing recorded as data rather than buried in prose."
+  crumbs={[{ label: 'Achievements' }]}
+  gridId="achievements-grid"
+  columns={2}
+  count={all.length}
+  countLabel={all.length === 1 ? 'entry' : 'entries'}
+  searchKind={KIND.achievement}
+>
+  {
+    tagFacets.length > 0 && (
+      <TagFilter
+        slot="filter"
+        facets={tagFacets}
+        label="Filter by tag"
+        target="achievements-grid"
+        emptyId="achievements-empty"
+      />
+    )
+  }
+
+  {all.map((achievement) => <AchievementCard achievement={achievement} level={2} />)}
+
+  {
+    all.length === 0 ? (
+      <EmptyState
+        class="archive-empty"
+        title="No achievements recorded yet"
+        body="Entries live in src/content/achievements.yaml."
+        icon="trophy"
+      />
+    ) : (
+      <EmptyState
+        id="achievements-empty"
+        class="archive-empty"
+        hidden
+        title="No achievements match those tags"
+        body="Selecting more tags narrows the results. Clear one to widen them again."
+      />
+    )
+  }
+</ArchiveLayout>

@@ -1,0 +1,168 @@
+---
+/**
+ * BaseHead — everything inside <head> except the theme script.
+ *
+ * The theme script deliberately lives in BaseLayout, ABOVE this component, so
+ * it executes before the stylesheet link this component emits. Moving it below
+ * reintroduces the flash (§6.2).
+ *
+ * EVERY VALUE HERE IS DERIVED, NEVER OPTIONAL-IN-PRACTICE. `title` and
+ * `description` are required props, the canonical is computed, and the social
+ * image falls back to a generated card rather than to nothing — so there is no
+ * combination of props that produces a page with an empty preview. Audit
+ * finding #7 was a site that shipped `<title>my-portfolio</title>` and no
+ * description at all; the fix is not "remember to set them", it is a component
+ * that cannot render without them.
+ */
+// `Font` ships from astro:assets, not from an `astro:fonts` module — the
+// Fonts API only contributes the CssVariable union to that same namespace.
+import { Font } from 'astro:assets';
+import { site } from '../../config/site.ts';
+import JsonLd from './JsonLd.astro';
+import { ogPath, OG_DEFAULT_ROUTE, OG_WIDTH, OG_HEIGHT } from '../../lib/og.ts';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Append the site name to the title. Off for the homepage. */
+  suffix?: boolean;
+  /**
+   * Site-relative path to the social card, normally from `ogPath()`. Left
+   * unset, the page gets the generated default card — never no card at all.
+   */
+  image?: string;
+  imageAlt?: string;
+  /** 'website' for pages, 'article' for posts and papers. */
+  type?: 'website' | 'article';
+  /** ISO dates for `og:type="article"`. Ignored for a website. */
+  publishedTime?: string;
+  modifiedTime?: string;
+  /** Keep a page out of the index (the styleguide, for one). */
+  noindex?: boolean;
+  /**
+   * Overrides the derived canonical URL — for a post first published
+   * elsewhere (`blog.canonical` in §4.4). Passed in rather than emitted as a
+   * second <link> by the layout, because two canonical tags on one page is
+   * undefined behaviour that search engines resolve by ignoring both.
+   */
+  canonical?: string;
+}
+
+const {
+  title,
+  description,
+  suffix = true,
+  image,
+  imageAlt,
+  type = 'website',
+  publishedTime,
+  modifiedTime,
+  noindex = false,
+  canonical: canonicalOverride,
+} = Astro.props;
+
+const fullTitle = suffix ? `${title} · ${site.name}` : title;
+
+/**
+ * NO TRAILING SLASH, everywhere (risk #8). Astro, Vercel's router, the
+ * canonical tag, and the sitemap `serialize` hook must all agree, or search
+ * engines see two URLs per page and split the signal between them. The root
+ * path is the one exception — "https://example.com" with no slash is not a
+ * valid canonical.
+ */
+const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const canonical = canonicalOverride ?? new URL(path, site.url).href;
+
+/**
+ * NEVER UNDEFINED. A page with no card of its own gets the generated default
+ * one, so `twitter:card` is always `summary_large_image` and no share of this
+ * site can render as a bare link. The alt text degrades the same way: a
+ * caller's `imageAlt` if it has one, otherwise a description of what the
+ * generated card actually contains — which is the title and the site name.
+ */
+const ogImage = new URL(image ?? ogPath(OG_DEFAULT_ROUTE), site.url).href;
+const ogImageAlt = imageAlt ?? `${title} — ${site.name}`;
+---
+
+{
+  /* `charset` and `viewport` are emitted by BaseLayout, above the theme
+    script — see the note there. They are deliberately NOT here: this component
+    renders after ~700 bytes of inline script, which is enough to push the
+    encoding declaration past the 1024-byte limit the HTML spec sets. */
+}
+<meta name="generator" content={Astro.generator} />
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+
+{
+  /* Both values are supplied so the browser UI matches whichever block of
+    §6.2 ends up applying, including before the theme script runs. */
+}
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#101317" media="(prefers-color-scheme: dark)" />
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="sitemap" href="/sitemap-index.xml" />
+<link rel="alternate" type="application/rss+xml" title={`${site.name} — Blog`} href="/rss.xml" />
+
+{
+  /* Self-hosted, subsetted, metric-matched. No third-party font request, ever
+    (§2.6). Only the display 600 is preloaded — it renders the LCP heading;
+    every other face relies on the metric-matched fallback, which is what keeps
+    CLS at zero without four render-blocking preloads. */
+}
+<Font cssVariable="--ff-display" preload={[{ weight: 600, style: 'normal' }]} />
+<Font cssVariable="--ff-mono" />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={site.name} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:locale" content="en_US" />
+
+{
+  /* Declaring the dimensions lets a scraper reserve the card's box before it
+    has fetched the image — the same reason every <img> on the site carries
+    width and height (risk #11). The values are the endpoint's own constants,
+    so a change to the card size cannot leave these behind. */
+}
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content={String(OG_WIDTH)} />
+<meta property="og:image:height" content={String(OG_HEIGHT)} />
+<meta property="og:image:alt" content={ogImageAlt} />
+
+{
+  /* Article timestamps. Emitted only for og:type="article", because
+    `article:published_time` on a website-typed page is ignored at best. */
+}
+{
+  type === 'article' && publishedTime && (
+    <meta property="article:published_time" content={publishedTime} />
+  )
+}
+{
+  type === 'article' && modifiedTime && (
+    <meta property="article:modified_time" content={modifiedTime} />
+  )
+}
+{type === 'article' && <meta property="article:author" content={site.name} />}
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+<meta name="twitter:image:alt" content={ogImageAlt} />
+
+{
+  /* Person + WebSite on every page (§6.1). Detail layouts add their own
+    article node in the `head` slot; the two are separate <script> blocks,
+    which is valid — a consumer merges every ld+json block on the page. */
+}
+<JsonLd kind="site" />
+
+<slot />

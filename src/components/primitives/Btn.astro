@@ -1,0 +1,193 @@
+---
+/**
+ * Btn — the only button/link-button on the site.
+ *
+ * Renders an <a> when `href` is set and a <button> otherwise, because the
+ * distinction is behavioural, not cosmetic: links navigate (and must be
+ * middle-clickable, bookmarkable, and crawlable), buttons act. Faking one with
+ * the other breaks the keyboard contract that Enter/Space imply.
+ *
+ * Three guarantees baked in, so no caller has to remember them:
+ *   - every instance clears the 44×44px touch target from §6.4;
+ *   - `external` adds rel="noopener noreferrer" AND announces the new tab,
+ *     rather than springing it on a screen-reader user silently;
+ *   - an icon-only button REQUIRES `label`, enforced at build time below.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from './Icon.astro';
+
+interface Props extends Omit<HTMLAttributes<'a'>, 'type'> {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md';
+  /** Lucide icon name rendered before the label. */
+  iconStart?: string;
+  /** Lucide icon name rendered after the label. */
+  iconEnd?: string;
+  /** Accessible name. Required when there is no visible text. */
+  label?: string;
+  /** Opens in a new tab, with the rel and the announcement handled. */
+  external?: boolean;
+  disabled?: boolean;
+  block?: boolean;
+}
+
+const {
+  href,
+  type = 'button',
+  variant = 'secondary',
+  size = 'md',
+  iconStart,
+  iconEnd,
+  label,
+  external = false,
+  disabled = false,
+  block = false,
+  class: className,
+  ...rest
+} = Astro.props;
+
+const hasText = Astro.slots.has('default');
+
+// An unlabelled icon-only control is a control nobody using a screen reader can
+// identify. Fail the build rather than ship it — the same principle as the Zod
+// `coverAlt` refinements in §4.2.
+if (!hasText && !label) {
+  throw new Error(
+    'Btn: an icon-only button needs `label`. Pass visible text in the default slot, or `label="…"` for the accessible name.',
+  );
+}
+
+const iconOnly = !hasText;
+const Tag = href ? 'a' : 'button';
+
+const linkAttrs = href
+  ? {
+      href: disabled ? undefined : href,
+      'aria-disabled': disabled ? ('true' as const) : undefined,
+      target: external ? ('_blank' as const) : undefined,
+      rel: external ? 'noopener noreferrer' : undefined,
+    }
+  : { type, disabled };
+---
+
+<Tag
+  aria-label={label}
+  class:list={[
+    'btn',
+    `variant-${variant}`,
+    `size-${size}`,
+    { 'icon-only': iconOnly, block, disabled },
+    className,
+  ]}
+  {...linkAttrs}
+  {...rest}
+>
+  {iconStart && <Icon name={iconStart} class="btn-icon" />}
+  {
+    hasText && (
+      <span class="btn-label">
+        <slot />
+      </span>
+    )
+  }
+  {iconEnd && <Icon name={iconEnd} class="btn-icon" />}
+  {external && <span class="sr-only">(opens in a new tab)</span>}
+</Tag>
+
+<style>
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    /* §6.4: 44px minimum, every variant, every size. */
+    min-block-size: var(--tap);
+    transition:
+      background-color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+
+  .size-sm {
+    padding-inline: 0.75rem;
+    min-block-size: 2.25rem;
+    font-size: var(--fs-xs);
+  }
+
+  .size-md {
+    padding-inline: 1.125rem;
+  }
+
+  /* Icon-only stays square and never drops below the touch minimum. */
+  .icon-only {
+    padding-inline: 0;
+    min-inline-size: var(--tap);
+    aspect-ratio: 1;
+  }
+
+  .icon-only.size-sm {
+    min-inline-size: 2.25rem;
+    min-block-size: 2.25rem;
+  }
+
+  .block {
+    display: flex;
+    inline-size: 100%;
+  }
+
+  .variant-primary {
+    background-color: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .variant-primary:hover:not(.disabled) {
+    background-color: var(--accent-hover);
+  }
+
+  .variant-secondary {
+    background-color: var(--surface);
+    color: var(--ink);
+    border-color: var(--control);
+  }
+
+  .variant-secondary:hover:not(.disabled) {
+    background-color: var(--surface-2);
+    border-color: var(--ink-3);
+  }
+
+  .variant-ghost {
+    background-color: transparent;
+    color: var(--ink-2);
+  }
+
+  .variant-ghost:hover:not(.disabled) {
+    background-color: var(--surface-2);
+    color: var(--ink);
+  }
+
+  .disabled,
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .btn-icon {
+    font-size: 1.125em;
+  }
+
+  .btn-label {
+    /* Keeps a two-word label from wrapping mid-button at 360px. */
+    white-space: nowrap;
+  }
+</style>

@@ -1,0 +1,41 @@
+---
+title: 'AI-Powered Adaptive Learning Device'
+summary: 'A handheld adaptive-learning device running fine-tuned LLMs for contextual reasoning, with inference distributed across a Raspberry Pi cluster.'
+category: 'engineering'
+status: 'prototype'
+role: 'Team lead'
+start: 2024-01-01
+end: null
+stack: ['LLMs', 'LangChain', 'Raspberry Pi', 'Multimodal']
+tags: ['llm', 'edge-inference', 'adaptive-learning']
+featured: true
+order: 2
+
+# ── CONTENT STATUS ────────────────────────────────────────────────────────
+# Confirm the real start/end dates and the team size behind `role`. Add
+# links.repo / links.demo if any of it becomes public.
+---
+
+An adaptive learning system is only adaptive if it responds within the span of a learner's
+attention. That constraint is what makes this a hardware problem rather than a model problem: a
+round trip to a hosted model is fast enough on a good connection and useless on a bad one, and the
+classrooms this was built for do not get to choose which they have.
+
+## Approach
+
+The device runs its reasoning locally, on a **Raspberry Pi cluster** rather than a single board.
+
+- **Fine-tuned LLMs** supply contextual reasoning over the learner's current state — what was
+  attempted, what was missed, and what the next question should therefore be.
+- **LangChain** orchestrates the retrieval and prompting steps so that lesson content, learner
+  history, and the model call stay separable components rather than one prompt template.
+- **Distributed inference** across the cluster is what buys acceptable latency from hardware that
+  individually cannot deliver it.
+- The interface is **multimodal**, because the target learners cannot all be assumed to read
+  fluently in the language of instruction.
+
+## What the constraint bought
+
+Running locally removes the network from the critical path entirely, which changes the interaction
+from request-response to something continuous. It also means learner data never leaves the
+device — a property that is much easier to guarantee by architecture than by policy.

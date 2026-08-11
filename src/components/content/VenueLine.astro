@@ -1,0 +1,96 @@
+---
+/**
+ * VenueLine — where a paper appeared (or is under consideration).
+ *
+ * The v1 site stored this as one display string, `"Expert Systems with
+ * Applications (Under Review)"`, which is why review status could never be
+ * filtered, sorted, or styled. §4.2 splits it into a typed `venue` object plus
+ * a `status` enum; this component is where the two are recombined for display,
+ * and it is the ONLY place that recombination happens.
+ *
+ * `short` is used in dense contexts (cards) and the full name everywhere the
+ * reader has room for it — the abbreviation is an affordance for people who
+ * already know the venue, never a replacement for naming it.
+ */
+import type { CollectionEntry } from 'astro:content';
+import type { HTMLAttributes } from 'astro/types';
+
+type Venue = CollectionEntry<'research'>['data']['venue'];
+
+interface Props extends HTMLAttributes<'p'> {
+  venue: Venue;
+  /** `full` names the venue; `short` prefers the abbreviation on cards. */
+  form?: 'full' | 'short';
+  size?: 'sm' | 'md';
+}
+
+const KIND_LABEL: Record<Venue['kind'], string> = {
+  journal: 'Journal',
+  conference: 'Conference',
+  workshop: 'Workshop',
+  preprint: 'Preprint',
+  thesis: 'Thesis',
+};
+
+const { venue, form = 'full', size = 'sm', class: className, ...rest } = Astro.props;
+
+const name = form === 'short' ? (venue.short ?? venue.name) : venue.name;
+const detail = [venue.volume && `vol. ${venue.volume}`, venue.pages && `pp. ${venue.pages}`]
+  .filter(Boolean)
+  .join(', ');
+---
+
+<p class:list={['venue', `size-${size}`, className]} {...rest}>
+  <span class="kind">{KIND_LABEL[venue.kind]}</span>
+  <span class="sep" aria-hidden="true">·</span>
+  <cite class="name">{name}</cite>
+  <span class="sep" aria-hidden="true">·</span>
+  <span class="year tabular">{venue.year}</span>
+  {
+    detail && (
+      <>
+        <span class="sep" aria-hidden="true">
+          ·
+        </span>
+        <span class="detail tabular">{detail}</span>
+      </>
+    )
+  }
+</p>
+
+<style>
+  .venue {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4375rem;
+    color: var(--ink-3);
+    line-height: var(--lh-normal);
+  }
+
+  .size-sm {
+    font-size: var(--fs-sm);
+  }
+
+  .size-md {
+    font-size: var(--fs-base);
+  }
+
+  .kind {
+    font-family: var(--ff-mono);
+    font-size: 0.85em;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+  }
+
+  /* <cite> is italic by default; a journal name set in italics inside a line
+     of metadata reads as emphasis rather than as a title. */
+  .name {
+    color: var(--ink-2);
+    font-style: normal;
+  }
+
+  .sep {
+    color: var(--line-strong);
+  }
+</style>

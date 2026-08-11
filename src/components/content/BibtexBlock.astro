@@ -1,0 +1,135 @@
+---
+/**
+ * BibtexBlock — the citation record, with a copy button.
+ *
+ * The only component in the research group that carries JavaScript (§6.1,
+ * ~0.4 KB). Two properties make that safe:
+ *
+ *  1. THE RECORD IS ALREADY IN THE HTML. With scripting disabled the <pre> is
+ *     still there, still selectable, and still correct. The script adds a
+ *     convenience, never the content.
+ *  2. THE BUTTON IS HIDDEN UNTIL THE SCRIPT ENABLES IT — the same construction
+ *     as ThemeToggle. `hidden` is removed only once the handler is attached and
+ *     the Clipboard API is confirmed present, so a non-functional control can
+ *     never be visible. That is audit finding #4's failure mode designed out
+ *     rather than avoided by care.
+ *
+ * The text is read from the <pre>'s own textContent, not from a duplicated
+ * data attribute, so what gets copied is by construction what is displayed.
+ */
+import type { CollectionEntry } from 'astro:content';
+import { toBibtex, citeKey } from '../../lib/bibtex.ts';
+
+interface Props {
+  paper: CollectionEntry<'research'>;
+  class?: string;
+}
+
+const { paper, class: className } = Astro.props;
+const record = toBibtex(paper);
+const id = `bibtex-${citeKey(paper)}`;
+---
+
+<figure class:list={['bibtex', className]} data-pagefind-ignore>
+  <figcaption class="head">
+    <span class="overline">BibTeX</span>
+    <button type="button" class="copy" data-copy-for={id} hidden>
+      <span class="copy-label" data-idle>Copy</span>
+      <span class="copy-label" data-done hidden>Copied</span>
+    </button>
+  </figcaption>
+
+  <pre id={id} class="record"><code>{record}</code></pre>
+</figure>
+
+<script>
+  /**
+   * Scoped to this component's markup, so a page rendering two papers gets two
+   * independent buttons. `type="module"` is deferred by definition, so it runs
+   * after the DOM is parsed with no DOMContentLoaded listener needed.
+   */
+  const RESET_MS = 2000;
+
+  for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-copy-for]')) {
+    const pre = document.getElementById(button.dataset.copyFor!);
+    // No source element, or no Clipboard API (any non-secure context): leave
+    // the button hidden. Better an absent affordance than a dead one.
+    if (!pre || !navigator.clipboard) continue;
+
+    const idle = button.querySelector<HTMLElement>('[data-idle]')!;
+    const done = button.querySelector<HTMLElement>('[data-done]')!;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pre.textContent ?? '');
+      } catch {
+        return; // a denied permission must not claim success
+      }
+      idle.hidden = true;
+      done.hidden = false;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        idle.hidden = false;
+        done.hidden = true;
+      }, RESET_MS);
+    });
+
+    button.hidden = false;
+  }
+</script>
+
+<style>
+  .bibtex {
+    margin-block: var(--space-block) 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-2);
+    overflow: hidden;
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.875rem;
+    border-block-end: 1px solid var(--line);
+  }
+
+  .copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 2rem;
+    padding-inline: 0.75rem;
+    border: 1px solid var(--control);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface);
+    color: var(--ink-2);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
+  }
+
+  .copy:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* The record is preformatted and must not wrap — a broken line in a BibTeX
+     entry is a broken entry — so the block scrolls on its own axis instead of
+     widening the page (§6.4). */
+  .record {
+    margin: 0;
+    padding: 0.875rem;
+    overflow-x: auto;
+    font-size: var(--fs-xs);
+    line-height: 1.6;
+    color: var(--ink-2);
+    tab-size: 2;
+  }
+</style>

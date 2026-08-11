@@ -1,0 +1,107 @@
+---
+/**
+ * PaperCard — one paper in the /research archive and on the homepage rail.
+ *
+ * The card shows `tldr`, never `abstract`. That distinction is why both fields
+ * exist in the schema (§4.2): an abstract is 200 words of prose that turns a
+ * grid of cards into a wall of text, while `tldr` is capped at 240 characters
+ * precisely so a card, an OG image, and a search result can all use it.
+ *
+ * `data-tags` is what TagFilter reads (§6.3) and `data-pagefind-*` is what the
+ * Phase 6 search index reads. Both are plain attributes on server-rendered
+ * HTML, so filtering and indexing work identically with scripting disabled.
+ */
+import type { CollectionEntry } from 'astro:content';
+import Card from '../primitives/Card.astro';
+import StatusBadge from '../primitives/StatusBadge.astro';
+import AuthorList from './AuthorList.astro';
+import VenueLine from './VenueLine.astro';
+import TagList from './TagList.astro';
+import { tagAttr } from '../../lib/tags.ts';
+
+interface Props {
+  paper: CollectionEntry<'research'>;
+  /** Drops the byline and tags for the denser homepage rail. */
+  compact?: boolean;
+  /** Heading rank — an archive card sits under an <h2>, a rail card under one too. */
+  level?: 2 | 3 | 4;
+  class?: string;
+}
+
+const { paper, compact = false, level = 3, class: className } = Astro.props;
+const { data } = paper;
+const href = `/research/${paper.id}`;
+const Heading = `h${level}` as const;
+---
+
+<Card
+  as="article"
+  interactive
+  padding="lg"
+  class:list={['paper', { compact }, className]}
+  data-tags={tagAttr(data.topics)}
+>
+  <div class="top">
+    <VenueLine venue={data.venue} form="short" />
+    <StatusBadge status={data.status} />
+  </div>
+
+  <Heading class="title">
+    <a href={href} class="stretched-link">{data.title}</a>
+  </Heading>
+
+  {!compact && <AuthorList authors={data.authors} truncated={data.authorsTruncated} size="sm" />}
+
+  <p class="tldr">{data.tldr}</p>
+
+  {
+    !compact && data.topics.length > 0 && (
+      <TagList tags={data.topics} class="topics above-stretch" />
+    )
+  }
+</Card>
+
+<style>
+  .paper {
+    gap: 0.625rem;
+  }
+
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .title {
+    font-size: var(--fs-lg);
+    line-height: var(--lh-snug);
+    /* A paper title is the longest string on the page; balancing it stops a
+       three-line title from ending on a single orphaned word. */
+    text-wrap: balance;
+  }
+
+  .title a {
+    color: var(--ink);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .paper:hover .title a {
+    color: var(--accent);
+  }
+
+  .tldr {
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+  }
+
+  .topics {
+    margin-block-start: 0.375rem;
+  }
+
+  .compact .title {
+    font-size: var(--fs-base);
+  }
+</style>

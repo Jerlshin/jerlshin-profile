@@ -1,0 +1,44 @@
+---
+/**
+ * /blog/tags/[tag] — §6.3 layer 1, the static tag archive.
+ *
+ * THIS IS THE SOURCE OF TRUTH FOR TAG FILTERING. One real HTML file per tag:
+ * crawlable, shareable, cacheable, and working with scripting disabled or
+ * failed. The in-page TagFilter is a convenience layered on top; if it never
+ * runs, these pages are still how a reader reaches everything.
+ *
+ * Roughly thirty tags produce thirty pages of a few kilobytes each, which is a
+ * rounding error against the alternative — a client-side index that grows
+ * without bound and is useless to a crawler.
+ *
+ * No filter is rendered here: the reader has already filtered by arriving.
+ */
+import type { GetStaticPaths } from 'astro';
+import PostArchive from '../../../components/content/PostArchive.astro';
+import { posts } from '../../../lib/collections.ts';
+
+export const getStaticPaths = (async () => {
+  const all = await posts();
+  // Drafts are already excluded by `posts()` in production, so a tag used only
+  // by a draft generates no route — and cannot leak the draft's existence.
+  const tags = [...new Set(all.flatMap((p) => p.data.tags))].sort();
+
+  return tags.map((tag) => ({
+    params: { tag },
+    props: { tag, tagged: all.filter((p) => p.data.tags.includes(tag)) },
+  }));
+}) satisfies GetStaticPaths;
+
+const { tag, tagged } = Astro.props;
+---
+
+<PostArchive
+  posts={tagged}
+  total={tagged.length}
+  title={`Posts tagged ${tag}`}
+  heading={tag}
+  eyebrow="Tag"
+  description={`Every post tagged ${tag} — ${tagged.length} ${tagged.length === 1 ? 'post' : 'posts'}.`}
+  crumbs={[{ label: 'Blog', href: '/blog' }, { label: tag }]}
+  currentTag={tag}
+/>

@@ -1,0 +1,42 @@
+---
+/**
+ * /blog/[...slug] — a post.
+ *
+ * `[...slug]` and not `[slug]`: posts are colocated under a year directory
+ * (src/content/blog/2026/<slug>/index.mdx), so their ids contain a separator.
+ * A single-segment param would silently generate no routes for them.
+ *
+ * `render()` returns three things this page needs and nothing else can produce:
+ * `Content` (the compiled body), `headings` (what TableOfContents is built from,
+ * with ids assigned by the same pass that rendered them), and
+ * `remarkPluginFrontmatter` (where the reading-time plugin wrote its result).
+ */
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import PostLayout from '../../layouts/PostLayout.astro';
+import { mdxComponents } from '../../components/mdx/index.ts';
+import { posts, seriesOf, neighbours } from '../../lib/collections.ts';
+import { readingTimeOf } from '../../lib/reading-time.ts';
+
+export const getStaticPaths = (async () => {
+  const all = await posts();
+
+  return all.map((post) => ({
+    params: { slug: post.id },
+    props: {
+      post,
+      seriesParts: seriesOf(all, post),
+      ...neighbours(all, post),
+    },
+  }));
+}) satisfies GetStaticPaths;
+
+const { post, seriesParts, newer, older } = Astro.props;
+
+const { Content, headings, remarkPluginFrontmatter } = await render(post);
+const readingTime = readingTimeOf(remarkPluginFrontmatter);
+---
+
+<PostLayout {post} {headings} {readingTime} {seriesParts} {newer} {older}>
+  <Content components={mdxComponents} />
+</PostLayout>

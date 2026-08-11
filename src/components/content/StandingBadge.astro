@@ -1,0 +1,97 @@
+---
+/**
+ * StandingBadge — renders the typed `standing` object as a readable placing.
+ *
+ * This component is the point of §5.6's transform. The v1 data embedded the
+ * result in prose — title `"Winner - GAVS Technologies Hackathon"`, description
+ * `"5th place nationwide among 2,500+ participants"` — so the placing could not
+ * be sorted, filtered, or styled, and two entries phrased it differently.
+ * §4.5 destructures it into `{ rank, label, outOf }`; this is the single place
+ * those three fields become text.
+ *
+ *   { rank: 1 }                            → "Winner"
+ *   { rank: 5, outOf: 2500 }               → "5th of 2,500"
+ *   { rank: 5, label: 'Finalist', outOf }  → "Finalist · 5th of 2,500"
+ *   { label: 'Honourable mention' }        → "Honourable mention"
+ *
+ * The number formatter pins its locale for the same reason lib/dates.ts does:
+ * an unpinned Intl call renders "2,500" on one machine and "2 500" on another,
+ * so the same commit produces different HTML depending on where it was built.
+ */
+import type { CollectionEntry } from 'astro:content';
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '../primitives/Icon.astro';
+
+type Standing = NonNullable<CollectionEntry<'achievements'>['data']['standing']>;
+
+interface Props extends HTMLAttributes<'span'> {
+  standing: Standing;
+  size?: 'sm' | 'md';
+}
+
+const groups = new Intl.NumberFormat('en-GB');
+
+/** 1 → "1st", 2 → "2nd", 3 → "3rd", 11 → "11th", 21 → "21st". */
+const ordinal = (n: number): string => {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+};
+
+const { standing, size = 'sm', class: className, ...rest } = Astro.props;
+const { rank, label, outOf } = standing;
+
+// A bare first place reads as "Winner"; anything else states the position.
+const placing = rank === 1 && !label ? 'Winner' : rank ? ordinal(rank) : undefined;
+
+const parts = [label, placing && outOf ? `${placing} of ${groups.format(outOf)}` : placing].filter(
+  Boolean,
+);
+
+// A `standing: {}` that produced an empty badge would be a silent gap, so it
+// is a build error instead — the same principle as Btn's missing-label throw.
+if (parts.length === 0) {
+  throw new Error(
+    'StandingBadge: `standing` has neither `rank` nor `label`, so there is nothing to render. Omit `standing` entirely, or give it one of the two.',
+  );
+}
+
+const isWin = rank === 1;
+---
+
+<span class:list={['standing', `size-${size}`, { win: isWin }, className]} {...rest}>
+  <Icon name={isWin ? 'trophy' : 'medal'} size="0.875rem" />
+  {parts.join(' · ')}
+</span>
+
+<style>
+  .standing {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    border-radius: var(--radius-full);
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    background-color: var(--neutral-soft);
+  }
+
+  /* First place is the only placing that gets the accent. If every standing
+     were highlighted, none of them would be. */
+  .win {
+    color: var(--accent);
+    background-color: var(--accent-soft);
+  }
+
+  .size-sm {
+    padding: 0.3125rem 0.625rem;
+    font-size: var(--fs-xs);
+  }
+
+  .size-md {
+    padding: 0.4375rem 0.8125rem;
+    font-size: var(--fs-sm);
+  }
+</style>

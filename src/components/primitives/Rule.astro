@@ -1,0 +1,83 @@
+---
+/**
+ * Rule — a horizontal divider, optionally with a label set into it.
+ *
+ * A bare <hr> is a semantic thematic break. A labelled rule is not: it is a
+ * decorated heading-ish separator, so it renders as a <div> with the label in
+ * real text (not a ::before content string, which screen readers skip and
+ * search engines ignore).
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
+  label?: string;
+  /** Vertical breathing room around the line. */
+  spacing?: 'none' | 'sm' | 'md' | 'lg';
+  tone?: 'default' | 'strong';
+  class?: string;
+}
+
+// `...rest` also carries a parent component's scope attribute — see Nav.astro.
+const { label, spacing = 'md', tone = 'default', class: className, ...rest } = Astro.props;
+---
+
+{
+  label ? (
+    <div
+      class:list={['rule labelled', `sp-${spacing}`, `tone-${tone}`, className]}
+      role="separator"
+      {...rest}
+    >
+      <span class="line" aria-hidden="true" />
+      <span class="overline label">{label}</span>
+      <span class="line" aria-hidden="true" />
+    </div>
+  ) : (
+    <hr class:list={['rule', `sp-${spacing}`, `tone-${tone}`, className]} {...rest} />
+  )
+}
+
+<style>
+  .rule {
+    border: 0;
+    border-block-start: 1px solid var(--line);
+  }
+
+  .tone-strong {
+    border-block-start-color: var(--line-strong);
+  }
+
+  .sp-none {
+    margin-block: 0;
+  }
+  .sp-sm {
+    margin-block: 0.75rem;
+  }
+  .sp-md {
+    margin-block: 1.5rem;
+  }
+  .sp-lg {
+    margin-block: var(--space-block);
+  }
+
+  .labelled {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    border-block-start: 0;
+  }
+
+  .labelled .line {
+    flex: 1;
+    block-size: 1px;
+    background-color: var(--line);
+  }
+
+  .tone-strong .line {
+    background-color: var(--line-strong);
+  }
+
+  .label {
+    flex: none;
+  }
+</style>

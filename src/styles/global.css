@@ -1,0 +1,550 @@
+/* ==========================================================================
+   src/styles/global.css — design tokens, type scale, spacing rhythm, base.
+
+   Structure, in order:
+     0. Tailwind
+     1. Raw palette ramps        (theme-independent hex; never used directly)
+     2. THREE theme blocks       (§6.2 — light / system-dark / explicit-dark)
+     3. Non-colour tokens        (type scale, rhythm, layout, motion, z-index)
+     4. @theme inline            (expose tokens to Tailwind utilities)
+     5. @layer base              (element defaults)
+     6. @layer utilities         (the few helpers Tailwind has no name for)
+
+   THE ONE RULE (§6.2): components reference TOKENS ONLY. Never write a colour
+   literal inside a media query or a [data-theme] block. A colour whose sole
+   definition sits behind [data-theme] does not apply in the unstamped state,
+   which paints one theme's text on the other theme's background.
+
+   Contrast is verified, not assumed: `node scripts/check-contrast.mjs` parses
+   this file and asserts WCAG ratios (AAA on body prose, AA on secondary text
+   and links, 3:1 on control borders and focus rings) in both themes.
+   ========================================================================== */
+
+@import 'tailwindcss';
+
+/* --------------------------------------------------------------------------
+   1. RAW PALETTE RAMPS
+   Defined once, theme-independent. Blocks 2a/2b/2c only *map* these onto
+   semantic tokens, so the duplicated dark mapping stays eyeball-diffable.
+   -------------------------------------------------------------------------- */
+
+:root {
+  /* Warm neutral — the light theme's paper. */
+  --w-0: #ffffff;
+  --w-25: #fbfaf8;
+  --w-50: #f4f2ed;
+  --w-100: #efece6;
+  --w-200: #e6e2da;
+  --w-300: #cec8bc;
+  --w-400: #8a8377;
+  --w-500: #5f594f;
+  --w-600: #46413a;
+  --w-900: #1b1916;
+
+  /* Cool neutral — the dark theme's ground. Designed, not inverted (§6.4). */
+  --c-950: #101317;
+  --c-900: #171b20;
+  --c-850: #1e242a;
+  --c-800: #272d35;
+  --c-700: #3a424c;
+  --c-500: #6b7581;
+  --c-400: #8f98a3;
+  --c-300: #b6bdc6;
+  --c-100: #e7eaee;
+
+  /* Accent — one hue, used for meaning only (links, active state, status). */
+  --a-light: #0f5b8f;
+  --a-light-hi: #0a4670;
+  --a-light-soft: #e8f0f7;
+  --a-dark: #7db8e8;
+  --a-dark-hi: #a4cef2;
+  --a-dark-soft: #152430;
+
+  /* Status hues. Every pair below is contrast-checked against its own soft
+     background AND against --bg, because badges appear on both. */
+  --ok-light: #1f6a41;
+  --ok-light-soft: #e4f1e9;
+  --ok-dark: #6fc795;
+  --ok-dark-soft: #122318;
+
+  --warn-light: #8a5a06;
+  --warn-light-soft: #fbf0dc;
+  --warn-dark: #e0b063;
+  --warn-dark-soft: #251c0e;
+
+  --info-light: #4a4396;
+  --info-light-soft: #eceafa;
+  --info-dark: #a9a2ee;
+  --info-dark-soft: #1c1a2e;
+}
+
+/* --------------------------------------------------------------------------
+   2a. BARE :root — the COMPLETE light palette.
+   Applies when nothing is stamped on <html> and the OS preference is light,
+   and it is the base every other block overrides. Nothing may be missing here.
+   -------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  --bg: var(--w-25);
+  --surface: var(--w-0);
+  --surface-2: var(--w-50);
+
+  --ink: var(--w-900); /* body + headings — AAA */
+  --ink-2: var(--w-600); /* secondary prose  — AA  */
+  --ink-3: var(--w-500); /* metadata, captions — AA */
+
+  --line: var(--w-200); /* decorative hairline */
+  --line-strong: var(--w-300); /* emphasised divider  */
+  --control: var(--w-400); /* interactive borders — 3:1 */
+
+  --accent: var(--a-light);
+  --accent-hover: var(--a-light-hi);
+  --accent-soft: var(--a-light-soft);
+  --on-accent: var(--w-0);
+
+  --ok: var(--ok-light);
+  --ok-soft: var(--ok-light-soft);
+  --warn: var(--warn-light);
+  --warn-soft: var(--warn-light-soft);
+  --info: var(--info-light);
+  --info-soft: var(--info-light-soft);
+  --neutral: var(--w-500);
+  --neutral-soft: var(--w-100);
+
+  --overlay: rgb(27 25 22 / 0.42);
+  --shadow-1: 0 1px 2px rgb(27 25 22 / 0.05);
+  --shadow-2: 0 10px 30px -12px rgb(27 25 22 / 0.28);
+}
+
+/* --------------------------------------------------------------------------
+   2b. Unset preference on a dark OS.
+   Guarded with :not([data-theme='light']) so an EXPLICIT light choice wins.
+   -------------------------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg: var(--c-950);
+    --surface: var(--c-900);
+    --surface-2: var(--c-850);
+
+    --ink: var(--c-100);
+    --ink-2: var(--c-300);
+    --ink-3: var(--c-400);
+
+    --line: var(--c-800);
+    --line-strong: var(--c-700);
+    --control: var(--c-500);
+
+    --accent: var(--a-dark);
+    --accent-hover: var(--a-dark-hi);
+    --accent-soft: var(--a-dark-soft);
+    --on-accent: var(--c-950);
+
+    --ok: var(--ok-dark);
+    --ok-soft: var(--ok-dark-soft);
+    --warn: var(--warn-dark);
+    --warn-soft: var(--warn-dark-soft);
+    --info: var(--info-dark);
+    --info-soft: var(--info-dark-soft);
+    --neutral: var(--c-400);
+    --neutral-soft: var(--c-850);
+
+    --overlay: rgb(4 6 8 / 0.62);
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-2: 0 10px 30px -12px rgb(0 0 0 / 0.7);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2c. Explicit dark choice — wins on a light OS too.
+
+   ⚠️  Blocks 2b and 2c MUST declare the identical token list. They differ only
+   in their selector. If you add a token to one, add it to the other, then run
+   `node scripts/check-contrast.mjs`, which fails when the two blocks diverge.
+   -------------------------------------------------------------------------- */
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: var(--c-950);
+  --surface: var(--c-900);
+  --surface-2: var(--c-850);
+
+  --ink: var(--c-100);
+  --ink-2: var(--c-300);
+  --ink-3: var(--c-400);
+
+  --line: var(--c-800);
+  --line-strong: var(--c-700);
+  --control: var(--c-500);
+
+  --accent: var(--a-dark);
+  --accent-hover: var(--a-dark-hi);
+  --accent-soft: var(--a-dark-soft);
+  --on-accent: var(--c-950);
+
+  --ok: var(--ok-dark);
+  --ok-soft: var(--ok-dark-soft);
+  --warn: var(--warn-dark);
+  --warn-soft: var(--warn-dark-soft);
+  --info: var(--info-dark);
+  --info-soft: var(--info-dark-soft);
+  --neutral: var(--c-400);
+  --neutral-soft: var(--c-850);
+
+  --overlay: rgb(4 6 8 / 0.62);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 10px 30px -12px rgb(0 0 0 / 0.7);
+}
+
+/* --------------------------------------------------------------------------
+   3. NON-COLOUR TOKENS — identical in both themes.
+   Both themes use identical geometry, which is why toggling causes no layout
+   shift (§6.2). Never make a size token theme-dependent.
+   -------------------------------------------------------------------------- */
+
+:root {
+  /* --- Font stacks -------------------------------------------------------
+     --ff-display / --ff-mono are emitted by Astro's Fonts API (astro.config
+     .mjs `cssVariable`). They are named --ff-* rather than --font-* to avoid
+     colliding with Tailwind v4's --font-* theme namespace. Section 4 aliases
+     them back onto Tailwind's names. */
+  --ff-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif;
+
+  /* --- Type scale --------------------------------------------------------
+     Fluid between a 360px and a 1440px viewport, then clamped. Above 1440px
+     type stops growing — extra width becomes margin, never longer lines. */
+  --fs-xs: 0.75rem; /* 12px — badges, tags, overline */
+  --fs-sm: 0.875rem; /* 14px — metadata, captions, UI */
+  --fs-base: 1rem; /* 16px — UI body */
+  --fs-md: 1.0625rem; /* 17px — long-form prose body */
+  --fs-lg: clamp(1.0833rem, 1.0833rem + 0.1852vw, 1.25rem);
+  --fs-xl: clamp(1.1667rem, 1.1667rem + 0.3704vw, 1.5rem);
+  --fs-2xl: clamp(1.375rem, 1.375rem + 0.5556vw, 1.875rem);
+  --fs-3xl: clamp(1.5417rem, 1.5417rem + 0.9259vw, 2.375rem);
+  --fs-4xl: clamp(1.8333rem, 1.8333rem + 1.2963vw, 3rem);
+
+  --lh-tight: 1.15; /* display headings */
+  --lh-snug: 1.3; /* section headings, card titles */
+  --lh-normal: 1.5; /* UI text */
+  --lh-prose: 1.65; /* long-form reading */
+
+  --tracking-tight: -0.015em;
+  --tracking-wide: 0.02em;
+  --tracking-caps: 0.08em; /* overline / eyebrow text */
+
+  /* --- Spacing -----------------------------------------------------------
+     Utilities use Tailwind's built-in 0.25rem scale (p-4 = 1rem). The tokens
+     below are the SEMANTIC rhythm values that scale with the viewport and so
+     cannot be expressed as a fixed step. */
+  --gutter: 1rem; /* < 640px  (§6.4) */
+  --space-section: clamp(2.75rem, 1.5rem + 5vw, 5rem);
+  --space-block: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+  --space-stack: 1rem;
+
+  /* --- Layout ------------------------------------------------------------ */
+  --shell-max: 1440px; /* hard cap — ≥1920px gets margin, not stretch */
+  --content-max: 72ch; /* centred content column        (§6.4) */
+  --measure: 68ch; /* hard cap on prose line length (§6.4) */
+  --rail-w: 16rem; /* sticky TOC / paper-meta rail at ≥1440px */
+  --header-h: 3.5rem;
+  --tap: 2.75rem; /* 44px minimum touch target     (§6.4) */
+
+  /* --- Shape ------------------------------------------------------------- */
+  --radius-xs: 3px;
+  --radius-sm: 4px; /* matches expressiveCode styleOverrides.borderRadius */
+  --radius-md: 6px;
+  --radius-full: 999px;
+
+  /* --- Motion ------------------------------------------------------------ */
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* --- Stacking ---------------------------------------------------------- */
+  --z-raised: 10;
+  --z-header: 50;
+  --z-back-to-top: 60;
+  --z-drawer: 100;
+  --z-skip: 200;
+}
+
+@media (min-width: 40rem) {
+  /* 640px */
+  :root {
+    --gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  /* 1024px */
+  :root {
+    --gutter: 2rem;
+    --header-h: 4rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. TAILWIND BRIDGE
+   `inline` matters: it substitutes var(--ink) straight into the utility rather
+   than adding a second --color-ink hop, so utilities re-resolve when the theme
+   blocks above change a token. Hand-written CSS uses var(--ink) directly.
+   -------------------------------------------------------------------------- */
+
+@theme inline {
+  --font-sans: var(--ff-sans);
+  --font-display: var(--ff-display);
+  --font-mono: var(--ff-mono);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-control: var(--control);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-neutral: var(--neutral);
+  --color-neutral-soft: var(--neutral-soft);
+
+  --text-xs: var(--fs-xs);
+  --text-sm: var(--fs-sm);
+  --text-base: var(--fs-base);
+  --text-md: var(--fs-md);
+  --text-lg: var(--fs-lg);
+  --text-xl: var(--fs-xl);
+  --text-2xl: var(--fs-2xl);
+  --text-3xl: var(--fs-3xl);
+  --text-4xl: var(--fs-4xl);
+
+  --leading-tight: var(--lh-tight);
+  --leading-snug: var(--lh-snug);
+  --leading-normal: var(--lh-normal);
+  --leading-prose: var(--lh-prose);
+
+  --tracking-tight: var(--tracking-tight);
+  --tracking-wide: var(--tracking-wide);
+  --tracking-caps: var(--tracking-caps);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-full: var(--radius-full);
+
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+
+  --ease-out-custom: var(--ease);
+}
+
+/* --------------------------------------------------------------------------
+   5. BASE
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* Anchors and skip-link targets clear the sticky header. */
+    scroll-padding-top: calc(var(--header-h) + 1rem);
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--ff-sans);
+    font-size: var(--fs-base);
+    line-height: var(--lh-normal);
+    /* Never synthesise a weight or slant the loaded face does not have. */
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--ff-display);
+    font-weight: 600;
+    line-height: var(--lh-snug);
+    letter-spacing: var(--tracking-tight);
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  h1 {
+    font-size: var(--fs-4xl);
+    line-height: var(--lh-tight);
+  }
+  h2 {
+    font-size: var(--fs-2xl);
+  }
+  h3 {
+    font-size: var(--fs-xl);
+  }
+  h4 {
+    font-size: var(--fs-lg);
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Bare <a> inherits, so chrome links are not accidentally accent-coloured.
+     Authored links opt in via .link, <Prose>, or the Btn primitive. */
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--ff-mono);
+    font-size: 0.9em;
+  }
+
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  /* One focus treatment for the whole site. Visible in both themes at 3:1. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  ::selection {
+    background-color: var(--accent-soft);
+    color: var(--ink);
+  }
+
+  /* Native form controls inherit the type system rather than the UA's. */
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+}
+
+/* Motion is opt-out, globally, in one place. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. UTILITIES — only what Tailwind has no name for.
+   -------------------------------------------------------------------------- */
+
+@layer utilities {
+  /* Hard cap on line length. The single rule that makes 2560px readable. */
+  .measure {
+    max-width: var(--measure);
+  }
+
+  .measure-wide {
+    max-width: var(--content-max);
+  }
+
+  /* Metadata: dates, counts, ranks. Digits must not jitter between values. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Eyebrow / overline label. */
+  .overline {
+    font-family: var(--ff-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* An authored link: accent, underlined, offset clear of descenders. */
+  .link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: from-font;
+    text-underline-offset: 0.15em;
+    transition: color var(--dur-fast) var(--ease);
+  }
+  .link:hover {
+    color: var(--accent-hover);
+  }
+
+  /* Guarantees the 44px minimum target without forcing 44px of visual box. */
+  .tap-target {
+    min-inline-size: var(--tap);
+    min-block-size: var(--tap);
+  }
+
+  /*
+   * Makes a card's title link cover the whole card without nesting the card's
+   * other links inside an <a>. See Card.astro for why this exists rather than
+   * an <a> wrapper. Global rather than scoped because the link lives in a
+   * different component from the Card that positions it.
+   */
+  .stretched-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+  }
+
+  /* Anything that must stay clickable sits above the overlay. */
+  .above-stretch {
+    position: relative;
+    z-index: 2;
+  }
+}

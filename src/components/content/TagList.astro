@@ -1,0 +1,69 @@
+---
+/**
+ * TagList — a row of tags on a card or a detail page.
+ *
+ * A real <ul>, because it is a list and a screen reader should say so ("list,
+ * 3 items"). The bullets are removed visually; the semantics are not.
+ *
+ * `hrefFor` is a function rather than a boolean because not every tag surface
+ * has an archive route behind it: blog tags route to /blog/tags/<tag>, while
+ * research `topics` currently have no static route and must render as inert
+ * chips. Passing nothing produces chips — a tag that looks like a link and
+ * navigates nowhere is the defect this migration exists to remove.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Tag from '../primitives/Tag.astro';
+
+interface Props extends HTMLAttributes<'ul'> {
+  tags: string[];
+  /** Returns the archive URL for a tag, or undefined for an inert chip. */
+  hrefFor?: (tag: string) => string | undefined;
+  /** Build-time facet counts, keyed by tag (§6.3). Never computed client-side. */
+  counts?: Record<string, number>;
+  /** The tag whose archive page is currently being viewed. */
+  current?: string;
+  size?: 'sm' | 'md';
+  /** Accessible name for the list. */
+  label?: string;
+}
+
+const {
+  tags,
+  hrefFor,
+  counts,
+  current,
+  size = 'sm',
+  label = 'Tags',
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+{
+  tags.length > 0 && (
+    <ul class:list={['tags', className]} aria-label={label} {...rest}>
+      {tags.map((tag) => (
+        <li>
+          <Tag
+            name={tag}
+            href={hrefFor?.(tag)}
+            count={counts?.[tag]}
+            current={current === tag}
+            size={size}
+          />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+</style>

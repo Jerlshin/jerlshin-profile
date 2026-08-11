@@ -1,0 +1,51 @@
+---
+/**
+ * /blog/page/[page] — pages 2..N of the archive.
+ *
+ * Page 1 is DELIBERATELY NOT GENERATED here: it is /blog. Emitting both would
+ * give one list of posts two URLs, which splits the search signal exactly as a
+ * trailing-slash mismatch does (risk #8). The `.filter()` below is the single
+ * line enforcing that, and `blogPageUrl` is what makes every link agree.
+ *
+ * When there are eight or fewer posts this route generates nothing at all, and
+ * that is correct — Pagination also declines to render for a single page.
+ */
+import type { GetStaticPaths } from 'astro';
+import PostArchive from '../../../components/content/PostArchive.astro';
+import { posts, POSTS_PER_PAGE, blogPageUrl } from '../../../lib/collections.ts';
+import { facets } from '../../../lib/tags.ts';
+
+export const getStaticPaths = (async () => {
+  const all = await posts();
+  const last = Math.max(1, Math.ceil(all.length / POSTS_PER_PAGE));
+
+  return Array.from({ length: last }, (_, i) => i + 1)
+    .filter((n) => n > 1)
+    .map((n) => ({
+      params: { page: String(n) },
+      props: {
+        page: all.slice((n - 1) * POSTS_PER_PAGE, n * POSTS_PER_PAGE),
+        total: all.length,
+        current: n,
+        last,
+        tagFacets: facets(all, (t) => `/blog/tags/${t}`),
+      },
+    }));
+}) satisfies GetStaticPaths;
+
+const { page, total, current, last, tagFacets } = Astro.props;
+---
+
+<PostArchive
+  posts={page}
+  {total}
+  title={`Blog — page ${current}`}
+  heading="Blog"
+  description={`Page ${current} of ${last}. Notes on multimodal learning, physiological signal processing, and the engineering around them.`}
+  lede="Working notes on multimodal learning, signal processing, and the engineering that makes research reproducible."
+  crumbs={[{ label: 'Blog', href: '/blog' }, { label: `Page ${current}` }]}
+  facets={tagFacets}
+  {current}
+  {last}
+  hrefFor={blogPageUrl}
+/>

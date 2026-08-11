@@ -1,0 +1,57 @@
+---
+/**
+ * Container — horizontal bounds and gutters. Every full-width element on the
+ * site gets its inline padding from here and nowhere else.
+ *
+ * The `width` scale encodes §6.4's ultra-wide rule: nothing stretches without
+ * limit. At 2560px the shell stops at 1440px and the surplus becomes margin,
+ * which is what keeps line length constant instead of unreadable.
+ *
+ *   shell   — page chrome and archive grids   (max 1440px)
+ *   content — a centred single column         (max 72ch)
+ *   prose   — long-form reading               (max 68ch, the hard measure)
+ *   full    — edge to edge, gutters only
+ */
+import type { HTMLAttributes, HTMLTag } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
+  as?: HTMLTag;
+  width?: 'shell' | 'content' | 'prose' | 'full';
+  /** Drop the inline gutter (for a container nested inside another). */
+  flush?: boolean;
+}
+
+const { as: Tag = 'div', width = 'shell', flush = false, class: className, ...rest } = Astro.props;
+---
+
+<Tag class:list={['container', `w-${width}`, { flush }, className]} {...rest}>
+  <slot />
+</Tag>
+
+<style>
+  .container {
+    inline-size: 100%;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .flush {
+    padding-inline: 0;
+  }
+
+  .w-shell {
+    max-inline-size: var(--shell-max);
+  }
+
+  .w-content {
+    max-inline-size: var(--content-max);
+  }
+
+  .w-prose {
+    max-inline-size: var(--measure);
+  }
+
+  .w-full {
+    max-inline-size: none;
+  }
+</style>

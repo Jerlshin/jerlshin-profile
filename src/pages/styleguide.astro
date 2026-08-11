@@ -1,0 +1,524 @@
+---
+/**
+ * /styleguide — every primitive and every token, on one page.
+ *
+ * This is the page the Phase 3 exit gate is checked against: it puts all 11
+ * primitives, both nav variants, all nine status values, and the full type and
+ * colour scales in one viewport so 360 / 768 / 1280 / 2560 px and both themes
+ * can be compared without hunting through the site.
+ *
+ * It is noindex + excluded from the sitemap + data-pagefind-ignore, so it is
+ * invisible to crawlers and to site search while staying reachable by URL for
+ * anyone maintaining the design system. Delete it only if the primitives stop
+ * being worth verifying.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumbs from '../components/chrome/Breadcrumbs.astro';
+import Section from '../components/primitives/Section.astro';
+import SectionHeader from '../components/primitives/SectionHeader.astro';
+import Container from '../components/primitives/Container.astro';
+import Card from '../components/primitives/Card.astro';
+import Tag from '../components/primitives/Tag.astro';
+import Pill from '../components/primitives/Pill.astro';
+import StatusBadge from '../components/primitives/StatusBadge.astro';
+import Rule from '../components/primitives/Rule.astro';
+import Prose from '../components/primitives/Prose.astro';
+import Icon from '../components/primitives/Icon.astro';
+import Btn from '../components/primitives/Btn.astro';
+
+const TYPE_SCALE = [
+  ['--fs-4xl', 'Display · page title'],
+  ['--fs-3xl', 'Section, large'],
+  ['--fs-2xl', 'Section heading'],
+  ['--fs-xl', 'Subsection'],
+  ['--fs-lg', 'Lede, card title'],
+  ['--fs-md', 'Prose body'],
+  ['--fs-base', 'UI body'],
+  ['--fs-sm', 'Metadata'],
+  ['--fs-xs', 'Badge, overline'],
+] as const;
+
+const SURFACES = ['--bg', '--surface', '--surface-2', '--neutral-soft', '--accent-soft'] as const;
+const INKS = ['--ink', '--ink-2', '--ink-3', '--accent', '--ok', '--warn', '--info'] as const;
+const BORDERS = ['--line', '--line-strong', '--control'] as const;
+
+const RESEARCH_STATUSES = [
+  'published',
+  'accepted',
+  'under-review',
+  'preprint',
+  'in-preparation',
+] as const;
+const PROJECT_STATUSES = ['active', 'shipped', 'prototype', 'archived'] as const;
+
+const TAGS: [string, number][] = [
+  ['multimodal', 7],
+  ['graph-neural-networks', 4],
+  ['mixture-of-experts', 3],
+  ['self-supervised-learning', 2],
+];
+---
+
+<BaseLayout
+  title="Styleguide"
+  description="Design tokens and primitive components for the site, shown together for review."
+  noindex
+>
+  <div data-pagefind-ignore>
+    <Section spacing="compact" width="shell">
+      <Breadcrumbs items={[{ label: 'Styleguide' }]} />
+      <SectionHeader
+        eyebrow="Phase 3"
+        title="Design system"
+        lede="Every token and every primitive on one page. Resize to 360, 768, 1280 and 2560 px, and flip the theme in the header — nothing here should reflow, clip, or lose contrast."
+        level={1}
+        size="lg"
+      />
+    </Section>
+
+    <!-- ── Colour ─────────────────────────────────────────────────────── -->
+    <Section spacing="compact" width="shell" divided>
+      <SectionHeader title="Colour tokens" size="sm" />
+      <h3 class="sub">Surfaces</h3>
+      <ul class="swatches">
+        {
+          SURFACES.map((token) => (
+            <li>
+              <span class="swatch" style={`background:var(${token})`} />
+              <code>{token}</code>
+            </li>
+          ))
+        }
+      </ul>
+
+      <h3 class="sub">Ink & accent</h3>
+      <ul class="swatches">
+        {
+          INKS.map((token) => (
+            <li>
+              <span class="swatch on-surface" style={`color:var(${token})`}>
+                Ag
+              </span>
+              <code>{token}</code>
+            </li>
+          ))
+        }
+      </ul>
+
+      <h3 class="sub">Borders</h3>
+      <ul class="swatches">
+        {
+          BORDERS.map((token) => (
+            <li>
+              <span class="swatch bordered" style={`border-color:var(${token})`} />
+              <code>{token}</code>
+            </li>
+          ))
+        }
+      </ul>
+    </Section>
+
+    <!-- ── Type ───────────────────────────────────────────────────────── -->
+    <Section spacing="compact" width="shell" divided>
+      <SectionHeader
+        title="Type scale"
+        size="sm"
+        lede="Fluid between 360 and 1440 px, then clamped. Above 1440 px type stops growing."
+      />
+      <ul class="type-list">
+        {
+          TYPE_SCALE.map(([token, role]) => (
+            <li class="type-row">
+              <span class="type-sample" style={`font-size:var(${token})`}>
+                Multimodal intelligence
+              </span>
+              <code class="type-token">{token}</code>
+              <span class="type-role">{role}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </Section>
+
+    <!-- ── Buttons ────────────────────────────────────────────────────── -->
+    <Section spacing="compact" width="shell" divided>
+      <SectionHeader title="Btn" size="sm" lede="All variants clear the 44px touch target." />
+      <div class="row">
+        <Btn variant="primary">Primary</Btn>
+        <Btn variant="secondary">Secondary</Btn>
+        <Btn variant="ghost">Ghost</Btn>
+        <Btn variant="secondary" iconStart="download">With icon</Btn>
+        <Btn variant="secondary" iconEnd="arrow-right">Trailing</Btn>
+        <Btn variant="ghost" label="Copy to clipboard" iconStart="copy" />
+        <Btn variant="secondary" disabled>Disabled</Btn>
+        <Btn href="https://github.com/Jerlshin" variant="secondary" iconStart="github" external>
+          External
+        </Btn>
+      </div>
+      <div class="row">
+        <Btn variant="primary" size="sm">Small primary</Btn>
+        <Btn variant="secondary" size="sm" iconStart="filter">Small icon</Btn>
+        <Btn variant="ghost" size="sm" label="Close" iconStart="x" />
+      </div>
+    </Section>
+
+    <!-- ── Labels ─────────────────────────────────────────────────────── -->
+    <Section spacing="compact" width="shell" divided>
+      <SectionHeader title="Tag, Pill, StatusBadge" size="sm" />
+
+      <h3 class="sub">Tag — taxonomy slugs, with build-time facet counts</h3>
+      <div class="row">
+        {TAGS.map(([name, count]) => <Tag name={name} count={count} href={`/blog/tags/${name}`} />)}
+        <Tag name="multimodal" count={7} href="/blog/tags/multimodal" current />
+        <Tag name="static-chip" />
+      </div>
+
+      <h3 class="sub">Pill — display labels that do not filter or route</h3>
+      <div class="row">
+        <Pill>PyTorch</Pill>
+        <Pill tone="outline">JAX</Pill>
+        <Pill tone="accent">Lead, 4-person team</Pill>
+        <Pill mono>v2.1.0</Pill>
+        <Pill size="md" tone="outline">Journal</Pill>
+      </div>
+
+      <h3 class="sub">StatusBadge — research</h3>
+      <div class="row">
+        {RESEARCH_STATUSES.map((status) => <StatusBadge status={status} />)}
+      </div>
+
+      <h3 class="sub">StatusBadge — projects</h3>
+      <div class="row">
+        {PROJECT_STATUSES.map((status) => <StatusBadge status={status} size="md" />)}
+      </div>
+    </Section>
+
+    <!-- ── Cards ──────────────────────────────────────────────────────── -->
+    <Section spacing="compact" width="shell" divided>
+      <SectionHeader
+        title="Card"
+        size="sm"
+        lede="Interactive cards use a stretched title link, so the tag links inside stay individually clickable."
+      />
+      <div class="grid">
+        <Card as="article" interactive>
+          <div class="row tight">
+            <StatusBadge status="under-review" />
+            <span class="meta tabular">2026</span>
+          </div>
+          <h3 class="card-title">
+            <a href="/styleguide" class="stretched-link">Interactive card with a stretched link</a>
+          </h3>
+          <p class="card-body">
+            The whole card is clickable. Tab to it and the ring lands on the card, not on an
+            invisible overlay.
+          </p>
+          <div class="row tight above-stretch">
+            <Tag name="multimodal" href="/blog/tags/multimodal" />
+            <Tag name="healthcare-ml" href="/blog/tags/healthcare-ml" />
+          </div>
+        </Card>
+
+        <Card as="article" tone="inset">
+          <h3 class="card-title">Inset card</h3>
+          <p class="card-body">Tone <code>inset</code>, no interaction, padding <code>md</code>.</p>
+        </Card>
+
+        <Card as="article" tone="plain" padding="lg">
+          <h3 class="card-title">Plain card</h3>
+          <p class="card-body">Border only — for grids that sit on a tinted Section.</p>
+        </Card>
+      </div>
+    </Section>
+
+    <!-- ── Rules ──────────────────────────────────────────────────────── -->
+    <Section spacing="compact" width="shell" divided>
+      <SectionHeader title="Rule" size="sm" />
+      <Rule />
+      <Rule label="2025" />
+      <Rule tone="strong" />
+    </Section>
+
+    <!-- ── Icons ──────────────────────────────────────────────────────── -->
+    <Section spacing="compact" width="shell" divided>
+      <SectionHeader
+        title="Icon"
+        size="sm"
+        lede="Inlined from Lucide at build time. A misspelt name fails the build."
+      />
+      <div class="row icons">
+        {
+          [
+            'github',
+            'linkedin',
+            'mail',
+            'file-text',
+            'file-down',
+            'external-link',
+            'arrow-right',
+            'arrow-up',
+            'copy',
+            'check',
+            'search',
+            'menu',
+            'x',
+            'sun',
+            'moon',
+            'map-pin',
+            'calendar',
+            'clock',
+            'award',
+            'graduation-cap',
+          ].map((name) => (
+            <span class="icon-cell">
+              <Icon name={name} size="1.25rem" />
+              <code>{name}</code>
+            </span>
+          ))
+        }
+      </div>
+    </Section>
+
+    <!-- ── Prose ──────────────────────────────────────────────────────── -->
+    <Section spacing="compact" width="shell" divided>
+      <SectionHeader
+        title="Prose"
+        size="sm"
+        lede="Capped at 68ch. This is the rule that keeps a 2560px monitor readable."
+      />
+      <Container width="prose" flush>
+        <Prose>
+          <h2>A second-level heading</h2>
+          <p>
+            Body copy at <code>--fs-md</code> and <code>--lh-prose</code>, held to the measure. The
+            line length here does not change between 1440 and 2560 px — the surplus becomes margin.
+            Long-form text is checked at AAA contrast, secondary text at AA.
+          </p>
+          <p>
+            An <a href="/">inline link</a>, some <strong>bold text</strong>, an
+            <em>emphasis</em>, and an <code>inline_code_identifier</code> that is long enough to need
+            wrapping on a narrow screen.
+          </p>
+          <h3>A third-level heading</h3>
+          <ul>
+            <li>An unordered item</li>
+            <li>
+              A nested list follows
+              <ul>
+                <li>Second level</li>
+              </ul>
+            </li>
+          </ul>
+          <blockquote>
+            <p>A pulled quote, set in secondary ink against a strong rule.</p>
+          </blockquote>
+          <table>
+            <thead>
+              <tr><th>Model</th><th>Dataset</th><th>Accuracy</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Baseline</td><td>PH2</td><td>0.912</td></tr>
+              <tr><td>Ours</td><td>PH2</td><td>0.947</td></tr>
+            </tbody>
+          </table>
+        </Prose>
+      </Container>
+    </Section>
+
+    <!-- ── Layout ─────────────────────────────────────────────────────── -->
+    <Section spacing="compact" width="shell" divided>
+      <SectionHeader title="Container widths" size="sm" />
+      <div class="widths">
+        <div class="width-demo w-shell"><code>shell — 1440px</code></div>
+        <div class="width-demo w-content"><code>content — 72ch</code></div>
+        <div class="width-demo w-prose"><code>prose — 68ch (--measure)</code></div>
+      </div>
+    </Section>
+
+    <Section spacing="compact" width="shell" tone="surface" divided>
+      <SectionHeader
+        title="Section tone=surface"
+        size="sm"
+        lede="A tinted band, separated by a token rather than a gradient."
+      />
+    </Section>
+  </div>
+</BaseLayout>
+
+<style>
+  .sub {
+    margin-block: 1.75rem 0.75rem;
+    font-family: var(--ff-sans);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .row + .row {
+    margin-block-start: 0.75rem;
+  }
+
+  .tight {
+    gap: 0.5rem;
+  }
+
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .swatches li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    font-size: var(--fs-xs);
+  }
+
+  .swatches code {
+    color: var(--ink-3);
+  }
+
+  .swatch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 5.5rem;
+    block-size: 3rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+  }
+
+  .swatch.on-surface {
+    background-color: var(--surface);
+    font-family: var(--ff-display);
+    font-size: var(--fs-xl);
+  }
+
+  .swatch.bordered {
+    border-width: 2px;
+    background-color: var(--surface);
+  }
+
+  .type-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .type-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
+    padding-block: 0.625rem;
+    border-block-end: 1px solid var(--line);
+  }
+
+  .type-sample {
+    flex: 1 1 14rem;
+    font-family: var(--ff-display);
+    line-height: var(--lh-snug);
+    min-inline-size: 0;
+  }
+
+  .type-token {
+    font-size: var(--fs-xs);
+    color: var(--accent);
+  }
+
+  .type-role {
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+  }
+
+  .grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 40rem) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .card-title {
+    margin-block: 0.625rem 0.5rem;
+    font-size: var(--fs-lg);
+  }
+
+  .card-body {
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    margin-block-end: 0.875rem;
+  }
+
+  .meta {
+    font-family: var(--ff-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+  }
+
+  .icons {
+    gap: 1rem;
+  }
+
+  .icon-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    inline-size: 6rem;
+    font-size: 0.6875rem;
+    color: var(--ink-3);
+    text-align: center;
+  }
+
+  .icon-cell :global(svg) {
+    color: var(--ink);
+  }
+
+  .widths {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .width-demo {
+    padding: 0.75rem 1rem;
+    background-color: var(--accent-soft);
+    border: 1px dashed var(--accent);
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-xs);
+    color: var(--accent);
+  }
+
+  .w-shell {
+    max-inline-size: var(--shell-max);
+  }
+  .w-content {
+    max-inline-size: var(--content-max);
+  }
+  .w-prose {
+    max-inline-size: var(--measure);
+  }
+</style>

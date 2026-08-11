@@ -1,0 +1,157 @@
+---
+/**
+ * BaseLayout — owns <html>, <head>, the theme script, and the site chrome.
+ * Every other layout wraps this one; no page renders <html> itself.
+ */
+import BaseHead from '../components/seo/BaseHead.astro';
+import SkipLink from '../components/chrome/SkipLink.astro';
+import SiteHeader from '../components/chrome/SiteHeader.astro';
+import SiteFooter from '../components/chrome/SiteFooter.astro';
+import BackToTop from '../components/chrome/BackToTop.astro';
+import SearchDialog from '../components/search/SearchDialog.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  suffix?: boolean;
+  image?: string;
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  publishedTime?: string;
+  modifiedTime?: string;
+  noindex?: boolean;
+  /** Overrides the derived canonical — cross-posted content only. */
+  canonical?: string;
+  /** Class hook for page-level layout variants. */
+  class?: string;
+}
+
+const { class: className, ...head } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    {
+      /*
+       * CHARSET IS THE LITERAL FIRST THING IN <head>, ABOVE THE THEME SCRIPT.
+       *
+       * The HTML spec requires the encoding declaration inside the first 1024
+       * bytes of the document; past that, a browser has already begun guessing.
+       * BaseHead used to own this tag, which put the ~700-byte theme script in
+       * front of it and pushed `<meta charset>` to byte 1094 — 70 bytes over
+       * the line, on every page. Nothing rendered wrong, nothing warned; a
+       * Lighthouse Best Practices audit was the only thing that noticed, which
+       * makes it precisely the §1.2 failure class this migration is about.
+       *
+       * Moving it up costs the theme script nothing: charset is a parser
+       * directive, not a resource, so the script still runs before the first
+       * stylesheet and before first paint.
+       */
+    }
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    {
+      /*
+       * ZERO-FOUC THEME SCRIPT — §6.2.
+       *
+       * MUST stay the first thing in <head>, above the stylesheet BaseHead
+       * emits. It is synchronous and unbundled (`is:inline`), so it runs to
+       * completion before the browser's first paint. A React useEffect runs
+       * AFTER first paint; that ordering, not the localStorage bug, is the
+       * structural reason the v1 site flashes (audit finding #4 + risk #5).
+       *
+       * Three things depend on the attribute actually being stamped:
+       *   1. §6.2 block 2c, the explicit dark theme;
+       *   2. Expressive Code, configured with useDarkModeMediaQuery: false and
+       *      a themeCssSelector keyed to [data-theme] — with nothing stamped,
+       *      code blocks get neither theme;
+       *   3. ThemeToggle, which reveals itself only once the attribute exists,
+       *      so the control can never be visible while non-functional. That is
+       *      the audit finding #4 failure — a toggle that lies — designed out.
+       *
+       * localStorage access is wrapped because it throws outright when storage
+       * is blocked. Only the READ is guarded: the stamp itself must happen even
+       * then, so the page still gets a theme.
+       */
+    }
+    <script is:inline>
+      (() => {
+        const read = () => {
+          try {
+            return localStorage.getItem('theme');
+          } catch {
+            return null;
+          }
+        };
+        const mq = matchMedia('(prefers-color-scheme: dark)');
+        const apply = (theme) => {
+          const el = document.documentElement;
+          el.dataset.theme = theme;
+          // Paints UA scrollbars, form controls, and the caret to match.
+          el.style.colorScheme = theme;
+        };
+        const stored = read();
+        apply(stored === 'light' || stored === 'dark' ? stored : mq.matches ? 'dark' : 'light');
+        // APPROVED DECISION (b): system preference is the default, so it must
+        // stay live. Without this, the stamped attribute freezes whatever the
+        // OS happened to be at load and stops tracking it.
+        mq.addEventListener('change', (e) => {
+          const s = read();
+          if (s !== 'light' && s !== 'dark') apply(e.matches ? 'dark' : 'light');
+        });
+      })();
+    </script>
+
+    <BaseHead {...head} />
+    <slot name="head" />
+  </head>
+
+  <body>
+    {
+      /* Zero-height marker observed by BackToTop. Declared here rather than
+         created in script so the page structure stays visible in view-source. */
+    }
+    <span id="top-sentinel" aria-hidden="true"></span>
+
+    <SkipLink />
+    <SiteHeader />
+
+    {/* tabindex="-1" makes the skip link's target actually focusable. */}
+    <main id="main" tabindex="-1" class:list={['main', className]}>
+      <slot />
+    </main>
+
+    <SiteFooter />
+    <BackToTop />
+
+    {
+      /* Last in the body, after the content it searches. It is a top-layer
+         <dialog>, so its position in the source has no bearing on where it
+         paints — but it does keep the search markup out of the reading order
+         for anyone tabbing through the page without opening it. */
+    }
+    <SearchDialog />
+  </body>
+</html>
+
+<style>
+  .main {
+    display: block;
+    /* Pushes the footer down on short pages without a flex/grid body, which
+       would otherwise fight the sticky header's stacking context. */
+    min-block-size: calc(100dvh - var(--header-h) - 16rem);
+  }
+
+  .main:focus {
+    outline: none;
+  }
+
+  #top-sentinel {
+    display: block;
+    block-size: 1px;
+    margin-block-end: -1px;
+  }
+</style>

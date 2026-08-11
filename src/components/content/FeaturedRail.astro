@@ -1,0 +1,98 @@
+---
+/**
+ * FeaturedRail — a homepage band: heading, a short lede, a few cards, and one
+ * link into the full archive.
+ *
+ * This is the component that makes the L1 → L2 → L3 hierarchy hold. Every
+ * content item on the site is reachable from the homepage in at most two
+ * clicks (Phase 4's exit gate): featured items are one click, and everything
+ * else is one click to the archive and one more to the item. The "View all"
+ * link is therefore not decoration — it is the second half of that guarantee,
+ * which is why it is part of the component rather than something a page
+ * remembers to add.
+ *
+ * It renders nothing at all when there are no items. A homepage section with an
+ * empty grid under a heading is worse than an absent section: it reads as a
+ * failure rather than as a site that has not published that kind of thing yet.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Section from '../primitives/Section.astro';
+import SectionHeader from '../primitives/SectionHeader.astro';
+import Btn from '../primitives/Btn.astro';
+
+interface Props extends HTMLAttributes<'section'> {
+  title: string;
+  eyebrow?: string;
+  lede?: string;
+  /** Archive URL behind the "View all" action. */
+  href: string;
+  /** Overrides the action label, e.g. "All 12 papers". */
+  actionLabel?: string;
+  /** Skip rendering entirely — pass the item count. */
+  count: number;
+  tone?: 'plain' | 'surface';
+  /** Grid columns at the widest breakpoint. */
+  columns?: 2 | 3;
+  id?: string;
+}
+
+const {
+  title,
+  eyebrow,
+  lede,
+  href,
+  actionLabel,
+  count,
+  tone = 'plain',
+  columns = 3,
+  id,
+  class: className,
+  ...rest
+} = Astro.props;
+
+const headingId = id ? `${id}-heading` : undefined;
+---
+
+{
+  count > 0 && (
+    <Section
+      id={id}
+      tone={tone}
+      spacing="default"
+      labelledby={headingId}
+      class:list={[className]}
+      {...rest}
+    >
+      <SectionHeader title={title} eyebrow={eyebrow} lede={lede} level={2} size="lg" id={headingId}>
+        <Btn slot="action" href={href} variant="ghost" size="sm" iconEnd="arrow-right">
+          {actionLabel ?? 'View all'}
+        </Btn>
+      </SectionHeader>
+
+      <div class:list={['grid', `cols-${columns}`]}>
+        <slot />
+      </div>
+    </Section>
+  )
+}
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* §6.4's archive grid ladder: 1 → 2 → 3 columns. */
+  @media (min-width: 40rem) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .cols-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

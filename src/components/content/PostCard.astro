@@ -1,0 +1,105 @@
+---
+/**
+ * PostCard — one post in the blog archive, a tag archive, or a homepage rail.
+ *
+ * Unlike PaperCard and ProjectCard, the tags here ARE links: /blog/tags/<tag>
+ * is a real static route (§6.3 layer 1), so a reader can click through and get
+ * a page that works with scripting disabled. TagList's `hrefFor` is what makes
+ * that distinction explicit rather than incidental.
+ *
+ * Reading time is optional because it costs a `render()` call per post to
+ * obtain. An archive of 200 posts should not render 200 MDX bodies just to
+ * print a number, so the archive passes nothing and the rails pass it in.
+ */
+import type { CollectionEntry } from 'astro:content';
+import Card from '../primitives/Card.astro';
+import PostMeta from './PostMeta.astro';
+import TagList from './TagList.astro';
+import type { ReadingTimeData } from '../../lib/reading-time.ts';
+import { blogTagHref, tagAttr } from '../../lib/tags.ts';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+  readingTime?: ReadingTimeData;
+  /** The tag archive currently being viewed, so its own chip reads as current. */
+  currentTag?: string;
+  compact?: boolean;
+  level?: 2 | 3 | 4;
+  class?: string;
+}
+
+const { post, readingTime, currentTag, compact = false, level = 3, class: className } = Astro.props;
+
+const { data } = post;
+const href = `/blog/${post.id}`;
+const Heading = `h${level}` as const;
+---
+
+<Card
+  as="article"
+  interactive
+  padding="lg"
+  class:list={['post', { compact }, className]}
+  data-tags={tagAttr(data.tags)}
+>
+  <PostMeta
+    pubDate={data.pubDate}
+    updatedDate={data.updatedDate}
+    readingTime={readingTime}
+    draft={data.draft}
+  />
+
+  <Heading class="title">
+    <a href={href} class="stretched-link">{data.title}</a>
+  </Heading>
+
+  <p class="description">{data.description}</p>
+
+  {
+    !compact && (
+      <TagList
+        tags={data.tags}
+        hrefFor={blogTagHref}
+        current={currentTag}
+        class="tags above-stretch"
+        label="Post tags"
+      />
+    )
+  }
+</Card>
+
+<style>
+  .post {
+    gap: 0.5rem;
+  }
+
+  .title {
+    margin-block-start: 0.125rem;
+    font-size: var(--fs-lg);
+    line-height: var(--lh-snug);
+    text-wrap: balance;
+  }
+
+  .title a {
+    color: var(--ink);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .post:hover .title a {
+    color: var(--accent);
+  }
+
+  .description {
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+  }
+
+  .tags {
+    margin-block-start: 0.5rem;
+  }
+
+  .compact .title {
+    font-size: var(--fs-base);
+  }
+</style>
