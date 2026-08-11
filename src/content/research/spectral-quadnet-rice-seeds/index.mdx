@@ -1,0 +1,75 @@
+---
+title: 'SpectralQuadNet: Tier-3 Hyperspectral Classifier for 90 Rice Seed Varieties'
+authors:
+  - name: 'Jerlshin Jose Gerly'
+    isMe: true
+authorsTruncated: false
+venue:
+  name: 'Manuscript in Preparation'
+  kind: 'preprint'
+  year: 2026
+  publisher: 'Elsevier'
+status: 'in-preparation'
+date: 2026-06-01
+abstract: 'SpectralQuadNet is a Tier-3 hyperspectral classifier for fine-grained discrimination of 90 rice seed varieties from 40-band spectral cubes. A MaskedSpectralECA front-end conditions the raw cube before it is split across four non-redundant feature branches — a 1D signal branch, a spectral-index branch, a spatial CNN branch, and a spectral-attention transformer branch — plus a compact morphology token, all fused through a gated low-rank bilinear layer and classified with an adaptive sub-centre ArcFace head. The manuscript is in preparation, targeting an Elsevier journal; quantitative results and the full experimental protocol replace this summary once results are finalised.'
+tldr: 'Four non-redundant spectral/spatial branches fused via gated low-rank bilinear fusion, classified with adaptive sub-centre ArcFace, for 90-way rice seed hyperspectral classification. In preparation.'
+topics:
+  [
+    'hyperspectral-imaging',
+    'fine-grained-classification',
+    'metric-learning',
+    'signal-processing',
+    'agricultural-ai',
+  ]
+featured: true
+order: 4
+
+# ── CONTENT STATUS ────────────────────────────────────────────────────────
+# The body below is scope, not results. Before the paper is submitted:
+#   - confirm the target venue and replace the placeholder `venue.name`
+#   - replace `abstract` with the final abstract once results are in
+#   - add links.arxiv or links.doi once available — content.config.ts
+#     REQUIRES one the moment `status` becomes `published`
+---
+
+<Callout type="note" title="Manuscript in preparation">
+  This page records the title, scope, and architecture of a manuscript that has not yet been
+  submitted. Quantitative results are published here once the write-up is finalised.
+</Callout>
+
+## Scope
+
+Hyperspectral seed classification pushes fine-grained classification into a regime where the
+useful signal is spread across dozens of narrow, correlated spectral bands rather than three broad
+colour channels, and where spatial texture and spectral chemistry carry genuinely different — and
+partly redundant — information. SpectralQuadNet is built around keeping those sources of
+information separate for as long as possible before fusing them.
+
+### Front-end
+
+A **MaskedSpectralECA** front-end conditions each 40-band cube before it reaches any branch,
+applying channel-wise efficient attention while masking out non-informative bands rather than
+processing the raw cube uniformly.
+
+### Four non-redundant branches
+
+- **Branch A** — SNV-normalised spectra passed through Savitzky–Golay derivatives, computed via a
+  custom **LambdaConv1d** layer, capturing local spectral slope and curvature.
+- **Branch B** — 64 soft normalized spectral indices plus continuum-absorption features, capturing
+  chemistry-linked ratios that a raw spectrum does not expose directly.
+- **Branch C** — a joint 3D+2D spatial CNN, capturing spatial texture across the seed surface at
+  two receptive-field scales.
+- **Branch D** — **SpecFormer**, a transformer with a wavelength-aware attention bias, capturing
+  long-range dependencies across the spectral axis that convolutional branches cannot.
+
+A compact **morphology token** — 8 seed-level shape metrics — is fused alongside the four learned
+branches, giving the model direct access to size and shape cues that are cheap to compute and easy
+to leak through the spectral branches otherwise.
+
+### Fusion and classification head
+
+The four branches and the morphology token are combined with a **gated low-rank bilinear fusion**
+layer (rank-128, 5.19M parameters), which lets branches interact multiplicatively without the
+parameter cost of a full bilinear layer. Classification uses an **adaptive sub-centre ArcFace**
+head ($K = 3$ sub-centres per class), which tolerates intra-class variation — different seed
+orientations and staining — better than a single-centre angular margin.

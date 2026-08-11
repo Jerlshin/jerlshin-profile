@@ -41,11 +41,11 @@ const schema = z.object({
 
 export const site = schema.parse({
   url: 'https://jerlshin-profile.vercel.app', // APPROVED DECISION (a)
-  name: 'Jerlshin J G',
-  headline: 'AI Researcher · Multimodal Intelligence',
+  name: 'Jerlshin Jose Gerly',
+  headline: 'AI Researcher · Multimodal Intelligence Specialist',
   tagline:
     'Bridging scientific innovation with human well-being through trustworthy, multimodal AI.',
-  location: 'Tirupathur, Tamil Nadu, India',
+  location: 'Erlangen, Bavaria, Germany',
   email: 'jerlshin.official008@gmail.com',
   // NOTE: `phone` deliberately omitted — APPROVED DECISION (d)
   availability: 'Open to Research Collaborations',

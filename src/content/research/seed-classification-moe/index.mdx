@@ -1,7 +1,7 @@
 ---
 title: 'Hierarchical Deep Learning for Fine-Grained Seed Classification: A Self-Supervised and Mixture-of-Experts Approach'
 authors:
-  - name: 'Jerlshin J G'
+  - name: 'Jerlshin Jose Gerly'
     isMe: true
 authorsTruncated: true
 venue:
@@ -11,9 +11,16 @@ venue:
   year: 2025
 status: 'under-review'
 date: 2025-01-01
-abstract: 'This work addresses fine-grained seed classification with a hierarchical architecture that pairs self-supervised representation learning with a mixture-of-experts classification head. The manuscript is under review at Expert Systems with Applications; the published abstract, including the experimental protocol and quantitative results, replaces this summary on acceptance.'
-tldr: 'Hierarchical self-supervised pretraining with a mixture-of-experts head for fine-grained seed classification. Under review at ESWA.'
-topics: ['self-supervised-learning', 'mixture-of-experts', 'fine-grained-classification']
+abstract: 'This work addresses fine-grained seed classification with a two-stage hierarchical architecture. Stage one pretrains a SwinV2-Tiny backbone with self-supervised DINO distillation, using Sinkhorn-Knopp centering and KoLeo regularization to keep the embedding space well-spread without labels. Stage two projects the resulting embeddings to a 384-dimensional space and routes them through a hierarchical mixture-of-experts head — sparse top-2-of-6 expert routing, a residual FiLM link, and cross-attention over spatial grid tokens — trained with an ArcFace angular-margin loss to separate 27 fine-grained sub-varieties. GroupShuffleSplit and StratifiedGroupKFold protocols are used throughout to prevent photograph crop leakage between splits. The manuscript is under review at Expert Systems with Applications; the published abstract, including the experimental protocol and quantitative results, replaces this summary on acceptance.'
+tldr: 'SwinV2 + DINO self-supervised pretraining feeding a sparse mixture-of-experts, ArcFace head for 27-way fine-grained seed classification. Under review at ESWA.'
+topics:
+  [
+    'self-supervised-learning',
+    'mixture-of-experts',
+    'fine-grained-classification',
+    'metric-learning',
+    'vision-transformers',
+  ]
 featured: true
 order: 1
 
@@ -38,12 +45,37 @@ localised details rather than by overall shape or context. Seed cultivars are a 
 of the problem: the discriminative evidence is texture and margin detail at a scale where intra-class
 variation from lighting and orientation is comparable to the inter-class variation being measured.
 
-This work approaches that setting with two components:
+The architecture is organised into two stages.
 
-- **Self-supervised pretraining**, so representation learning does not depend on the size of the
-  labelled cultivar set.
-- **A mixture-of-experts classification head**, so capacity is allocated per-region of the label
-  space instead of being shared uniformly across visually dissimilar groups.
+### Stage 1 — self-supervised pretraining
+
+A **SwinV2-Tiny** backbone is pretrained with **DINO** self-distillation, so representation
+learning does not depend on the size of the labelled cultivar set. Two regularisers keep the
+resulting embedding space well-behaved without any labels:
+
+- **Sinkhorn-Knopp centering** balances the teacher output distribution across the batch, avoiding
+  the collapse modes that plain centering does not fully prevent.
+- **KoLeo regularization** pushes embeddings apart within a batch by penalising small nearest-neighbour
+  distances, which keeps the pretrained space spread out rather than clustered.
+
+### Stage 2 — hierarchical mixture-of-experts head
+
+Pretrained embeddings are projected to a 384-dimensional space, $z \in \mathbb{R}^{384}$, and
+routed through a **hierarchical mixture-of-experts** classifier:
+
+- **Sparse top-2-of-6 expert routing** allocates capacity per-region of the label space instead of
+  sharing it uniformly across visually dissimilar cultivars.
+- A **residual FiLM link** conditions the expert pathway on the pooled embedding without discarding
+  it, and **cross-attention over spatial grid tokens** lets each expert attend back to the
+  backbone's spatial feature map rather than working from a single pooled vector.
+- An **ArcFace angular-margin loss** trains the final embedding to separate all 27 fine-grained
+  sub-varieties with a fixed angular margin, rather than a plain softmax decision boundary.
+
+### Diagnostics
+
+Because multiple crops can come from the same source photograph, ordinary random splits leak
+identity between train and validation. **GroupShuffleSplit** and **StratifiedGroupKFold** are used
+throughout the evaluation protocol so that no photograph's crops appear on both sides of a split.
 
 ## Related work on this site
 

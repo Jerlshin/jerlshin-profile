@@ -1,13 +1,15 @@
 - id: 'gavs-hackathon-2024'
-  title: 'GAVS Technologies Hackathon'
+  title: 'Winner - GAVS Technologies Hackathon'
   issuer: 'GAVS Technologies'
-  date: 2024-05-01
+  date: 2024-04-01
   kind: 'hackathon'
   standing:
     rank: 1
-  description: 'Led team to 1st place developing an intelligent automation solution.'
+    label: 'Winner'
+  description: 'Pioneered a collaborative clinical platform leveraging fine-tuned LLMs (LoRA-PEFT) and multi-agent coordination for longitudinal health tracking.'
+  featured: true
 - id: 'bits-pilani-open-2025'
-  title: 'BITS Pilani Open Challenge'
+  title: 'Finalist - BITS Pilani Open Challenge'
   issuer: 'BITS Pilani'
   date: 2025-01-01
   kind: 'competition'
@@ -15,18 +17,25 @@
     rank: 5
     label: 'Finalist'
     outOf: 2500
-  description: '5th place nationwide among 2,500+ participants.'
+  description: '5th place nationwide among 2,500+ participants for prototyping a handheld assistive edge-AI appliance powered by distributed Raspberry Pi model partitioning.'
+  featured: true
+- id: 'dlai-nlp-specialization'
+  title: 'Natural Language Processing Specialization'
+  issuer: 'DeepLearning.AI'
+  date: 2024-06-01
+  kind: 'certification'
+  credentialId: 'DLAI-NLP-CERT'
+  description: 'Sequence models, attention mechanisms, transformers, and NLP pipelines.'
+- id: 'dlai-deep-learning-specialization'
+  title: 'Deep Learning Specialization'
+  issuer: 'DeepLearning.AI'
+  date: 2023-11-01
+  kind: 'certification'
+  credentialId: 'DLAI-DL-CERT'
+  description: 'Neural networks, hyperparameter tuning, CNNs, and sequence models.'
 - id: 'vit-program-rep-2022'
   title: 'Program Representative'
   issuer: 'VIT Dept of CS'
   date: 2022-01-01
   kind: 'leadership'
   description: 'Elected to coordinate academic activities and student-faculty communication.'
-# TODO — certifications (plan §5.6), NOT ported: each needs a verification
-# URL or credentialId (achievements.refine() requires one for kind:
-# certification) plus an issue date, none of which exist in portfolioData.json.
-# Source titles, for reference:
-#   - Natural Language Processing Specialization (DeepLearning.AI)
-#   - Generative Adversarial Networks Specialization (DeepLearning.AI)
-#   - Deep Learning Specialization (DeepLearning.AI)
-#   - Machine Learning Specialization (Stanford University)

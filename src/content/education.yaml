@@ -1,11 +1,23 @@
+- id: 'fau-msc-ai'
+  degree: 'Master of Science in Artificial Intelligence'
+  institution: 'Friedrich-Alexander-Universität Erlangen-Nürnberg'
+  location: 'Erlangen, Bavaria, Germany'
+  start: 2026-04-01
+  end: null
+  coursework:
+    [
+      'Modern Natural Language Processing',
+      'Deep Learning',
+      'Multimodal AI',
+    ]
 - id: 'vit-btech-cse'
-  degree: 'B.Tech. in Computer Science and Engineering'
+  degree: 'Bachelor of Technology in Computer Science and Engineering'
   specialization: 'Artificial Intelligence and Robotics'
   institution: 'Vellore Institute of Technology'
-  location: 'Chennai, India'
+  location: 'Tamil Nadu, India'
   start: 2021-07-01
-  end: 2025-05-01
-  grade: '9.19 / 10 CGPA'
+  end: 2025-04-01
+  grade: '1.40 (German Scale) / 9.20 CGPA'
   thesis:
     title: 'Hierarchical Deep Learning for Fine-Grained Seed Classification: A Self-Supervised and Mixture-of-Experts Approach'
     # reference('research') — the thesis links straight to its paper page, and

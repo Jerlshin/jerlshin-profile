@@ -1,37 +1,33 @@
 ---
 title: 'Seeing the Skin Deeper: Interpretable Multi-Task Framework for Skin Lesion Diagnosis using Superpixel Graphs'
 authors:
-  - name: 'Jerlshin J G'
+  - name: 'Jerlshin Jose Gerly'
     isMe: true
 authorsTruncated: true
 venue:
   name: 'IEEE Access'
   short: 'IEEE Access'
   kind: 'journal'
-  year: 2025
-status: 'under-review'
-date: 2025-01-01
-abstract: 'This work presents an interpretable multi-task framework for skin lesion diagnosis in which a dermoscopic image is represented as a graph over superpixel regions rather than as a dense pixel grid, so that attribution can be reported at the level of clinically meaningful regions. The manuscript is under review at IEEE Access; the published abstract, including the experimental protocol and quantitative results, replaces this summary on acceptance.'
-tldr: 'Dermoscopic images as superpixel graphs, so a multi-task diagnosis model can attribute its decision to clinically meaningful regions. Under review at IEEE Access.'
-topics: ['skin-lesion-diagnosis', 'graph-neural-networks', 'explainable-ai']
+  year: 2026
+status: 'published'
+date: 2026-01-01
+abstract: 'This work presents an interpretable multi-task framework for skin lesion diagnosis in which a dermoscopic image is represented as a graph over superpixel regions rather than as a dense pixel grid, so that attribution can be reported at the level of clinically meaningful regions. A Swin Transformer backbone supplies per-region features, a graph attention network propagates context across the lesion, and a multi-task head jointly predicts the diagnostic label and dermoscopic clinical attributes on the PH2 dataset, so region-level attention weights are directly interpretable rather than reconstructed after the fact.'
+tldr: 'Dermoscopic images as superpixel graphs, so a Swin Transformer + GAT multi-task model can attribute its diagnosis to clinically meaningful regions on PH2. Published in IEEE Access.'
+topics:
+  [
+    'skin-lesion-diagnosis',
+    'graph-neural-networks',
+    'explainable-ai',
+    'multi-task-learning',
+    'vision-transformers',
+  ]
+links:
+  doi: 'https://doi.org/10.1109/ACCESS.2026.3666126'
 related:
   - 'graph-multitask-medical-imaging'
 featured: true
 order: 2
-
-# ── CONTENT STATUS ────────────────────────────────────────────────────────
-# The body below is scope, not results. Before the paper is accepted:
-#   - replace `abstract` with the published abstract
-#   - add the remaining co-authors in submission order, then set
-#     `authorsTruncated: false`
-#   - add links.doi or links.arxiv — content.config.ts REQUIRES one the
-#     moment `status` becomes `published`, so the build enforces this for you
 ---
-
-<Callout type="note" title="Manuscript under review">
-  This page records the title, venue, and research scope. The abstract, results, and citation
-  details are published here when the paper is accepted.
-</Callout>
 
 ## Scope
 
@@ -40,15 +36,17 @@ clinician reasons over regions — a border segment, an area of irregular pigmen
 between those two units of explanation is the practical reason post-hoc attribution on medical
 imaging so often fails to convince the people it is meant to convince.
 
-The framework here changes the unit of computation to match the unit of explanation:
+The framework changes the unit of computation to match the unit of explanation:
 
 - Each image is over-segmented into **superpixels**, which are then treated as graph nodes with
   edges encoding spatial adjacency and appearance similarity.
-- A **graph attention** backbone operates on that representation, so learned attention weights are
-  already region-level quantities rather than something reconstructed after the fact.
-- The head is **multi-task**, predicting diagnostic label alongside dermoscopic attributes, which
-  constrains the shared representation toward features that are independently reported by
-  clinicians.
+- A **Swin Transformer** backbone supplies the per-node representation, so each superpixel carries
+  hierarchical visual context rather than raw colour statistics.
+- A **graph attention network (GAT)** propagates across that representation, so learned attention
+  weights are already region-level quantities rather than something reconstructed after the fact.
+- The head is **multi-task**, jointly predicting the diagnostic label and dermoscopic clinical
+  attributes on the PH2 dataset, which constrains the shared representation toward features
+  independently reported by clinicians.
 
 ## Related work on this site
 

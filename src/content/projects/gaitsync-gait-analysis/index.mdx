@@ -1,0 +1,57 @@
+---
+title: 'GaitSync: Video-IMU Synchronization Engine for Gait Analysis'
+summary: 'A closed-form video/IMU synchronization engine and high-throughput gait analysis pipeline, aligning 240fps video with 60Hz wearable IMU streams to 2ms tolerance.'
+category: 'research'
+status: 'prototype'
+role: 'Sole developer, University of Augsburg'
+start: 2025-05-01
+end: 2025-10-01
+stack: ['PyTorch', 'ONNX Runtime', 'CoreML', 'MediaPipe', 'Electron', 'React', 'Python']
+tags: ['gait-analysis', 'sensor-fusion', 'computer-vision', 'signal-processing']
+metrics:
+  - label: 'Session processing time'
+    value: '8x faster'
+    detail: '3.9 hrs to 29 min per 15.7-min recording, via ONNX Runtime CoreML GPU execution and smart frame decimation'
+  - label: 'Event recall precision'
+    value: '0.94-0.97'
+    detail: 'Held constant despite the 8x processing speedup'
+  - label: 'Sync tolerance'
+    value: '2ms'
+    detail: 'Closed-form gait phase-identities across 240fps video and 60Hz IMU streams'
+  - label: 'Annotator render latency'
+    value: '0.92ms'
+    detail: 'Down from 2.26ms across 4,000 events on 30 channels'
+featured: true
+order: 4
+
+# ── CONTENT STATUS ────────────────────────────────────────────────────────
+# Research prototype built during the University of Augsburg internship; add
+# links.repo / links.paper if either becomes public.
+---
+
+Multimodal gait analysis lives or dies on synchronization. A video stream and a wearable IMU each
+have their own clock, their own sampling rate, and their own drift characteristics, and a gait
+event that looks aligned at the start of a recording can be tens of milliseconds off by the end.
+GaitSync treats that as a problem to solve in closed form rather than to patch with post-hoc
+smoothing.
+
+## Approach
+
+- A **dual-system C² B-spline time-warp engine** models the non-linear drift between the video and
+  IMU clocks directly, rather than assuming a fixed offset or a constant frame rate.
+- **Quantile transport** and **ground-plane homography** correct the residual non-linear drift
+  between the two streams, enforcing closed-form gait phase-identities to **2ms tolerance** across
+  **240fps video** and **60Hz IMU** data.
+- **ONNX Runtime with CoreML GPU execution**, combined with smart frame decimation, cuts full
+  session processing from 3.9 hours to 29 minutes per 15.7-minute recording — an 8x speedup — while
+  holding event recall precision at 0.94–0.97.
+- A **multi-process Electron/React annotator**, built with zero-copy binary IPC and Web Worker
+  Canvas rendering, brings interactive review latency down from 2.26ms to 0.92ms across 4,000
+  events spread over 30 channels.
+
+## Why closed-form matters
+
+A learned or heuristic aligner can get the common case right and drift silently on the case that
+matters — a limping gait, a missed step, a sensor dropout. Solving the alignment in closed form
+means the tolerance the pipeline reports is a guarantee about every session, not an average over
+the sessions it happened to see.

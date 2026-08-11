@@ -1,0 +1,54 @@
+---
+title: 'Multimodal Affective Signal Classification'
+summary: 'A self-supervised contrastive learning framework classifying boredom-vs-neutral affective states from ECG and GSR, reaching 87% held-out accuracy across 73 subjects.'
+category: 'research'
+status: 'prototype'
+role: 'Student researcher, Nanyang Technological University'
+start: 2024-10-01
+end: 2025-07-01
+stack: ['PyTorch', 'ECG/GSR', 'Continuous Wavelet Transform', 'SimCLR', 'MoCo', 'Optuna', 'Python']
+tags: ['affective-computing', 'self-supervised-learning', 'signal-processing']
+metrics:
+  - label: 'Held-out accuracy'
+    value: '87%'
+    detail: 'Boredom-vs-neutral state classification across 73 subjects'
+  - label: 'Hyperparameter search'
+    value: '200 trials'
+    detail: 'Optuna search over the full preprocessing and contrastive pipeline'
+  - label: 'Leakage control'
+    value: 'FDR-gated'
+    detail: 'Fisher-Discriminant-Ratio gates (label FDR > 0.15, subject FDR < 0.25) eliminate cross-subject identity leakage'
+featured: true
+order: 5
+
+# ── CONTENT STATUS ────────────────────────────────────────────────────────
+# Research prototype built during the NTU studentship; add links.repo /
+# links.paper if either becomes public.
+---
+
+Physiological signals are an honest but noisy window into affective state — informative when
+aligned correctly across modalities and subjects, and misleading the moment a model finds a shortcut
+through subject identity instead of the state it is meant to classify. This project builds a
+pipeline that treats both problems, alignment and leakage, as first-class constraints rather than as
+preprocessing footnotes.
+
+## Approach
+
+- A **self-supervised contrastive learning framework** (SimCLR/MoCo-style) pretrains on unlabeled
+  ECG and GSR windows before any boredom-vs-neutral labels are introduced, reaching **87% held-out
+  classification accuracy** across 73 subjects.
+- An **ECG-anchored multi-rate alignment pipeline** maps 256Hz ECG to 16Hz GSR with zero temporal
+  drift, using the higher-rate ECG stream as the timing reference for the slower GSR channel.
+- Signals are denoised with **Daubechies-4 wavelet soft-thresholding** and **Butterworth
+  filtering**, via continuous wavelet transform scalograms, before entering the contrastive encoder.
+- The full pipeline is tuned with a **200-trial Optuna search**, and **Fisher-Discriminant-Ratio
+  gates** (label FDR > 0.15, subject FDR < 0.25) are enforced on the learned representation to
+  eliminate cross-subject identity leakage — the failure mode where a classifier learns to recognise
+  *who* is wearing the sensor rather than *what state* they are in.
+
+## Why the leakage gate matters
+
+A model that separates subjects instead of states can still report a high held-out accuracy if the
+split does not force generalisation across subjects. The FDR gate makes that failure visible during
+training rather than after deployment, by directly measuring how much subject identity, versus
+label, the representation encodes.
