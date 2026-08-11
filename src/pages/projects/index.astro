@@ -27,13 +27,23 @@ const tagFacets = facets(all);
   count={all.length}
   countLabel={all.length === 1 ? 'project' : 'projects'}
 >
-  <TagFilter
-    slot="filter"
-    facets={tagFacets}
-    label="Filter by tag"
-    target="projects-grid"
-    emptyId="projects-empty"
-  />
+  {
+    /* `projects.tags` defaults to [] in the schema, so an archive with no
+      tagged projects is reachable. Without this guard ArchiveLayout's
+      `Astro.slots.has('filter')` is true for a filter that renders nothing,
+      leaving a --space-block gap under the header. */
+  }
+  {
+    tagFacets.length > 0 && (
+      <TagFilter
+        slot="filter"
+        facets={tagFacets}
+        label="Filter by tag"
+        target="projects-grid"
+        emptyId="projects-empty"
+      />
+    )
+  }
 
   {all.map((project) => <ProjectCard project={project} level={2} />)}
 

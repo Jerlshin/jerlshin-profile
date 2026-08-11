@@ -35,13 +35,23 @@ const topicFacets = facets(all);
   count={all.length}
   countLabel={all.length === 1 ? 'paper' : 'papers'}
 >
-  <TagFilter
-    slot="filter"
-    facets={topicFacets}
-    label="Filter by topic"
-    target="research-grid"
-    emptyId="research-empty"
-  />
+  {
+    /* Guarded at the call site, not just inside TagFilter. The component
+      declines to render with no facets, but the slot would still COUNT as
+      filled, and ArchiveLayout's `Astro.slots.has('filter')` would emit an
+      empty `.filter` div carrying a --space-block margin. */
+  }
+  {
+    topicFacets.length > 0 && (
+      <TagFilter
+        slot="filter"
+        facets={topicFacets}
+        label="Filter by topic"
+        target="research-grid"
+        emptyId="research-empty"
+      />
+    )
+  }
 
   {all.map((paper) => <PaperCard paper={paper} level={2} />)}
 

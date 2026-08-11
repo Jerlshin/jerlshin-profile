@@ -84,7 +84,7 @@ const related = await Promise.all(data.related.map((ref) => getEntry(ref)));
     >
       <header class="head">
         <h1 class="title">{data.title}</h1>
-        <PaperMeta data={data} class="meta" />
+        <PaperMeta data={data} class="byline" />
       </header>
 
       {
@@ -150,7 +150,9 @@ const related = await Promise.all(data.related.map((ref) => getEntry(ref)));
     text-wrap: balance;
   }
 
-  .meta {
+  /* Named for the block rather than reusing PaperMeta's own `.meta`, so the
+     two scopes do not stack the same class name on one element. */
+  .byline {
     margin-block-start: 1.25rem;
   }
 

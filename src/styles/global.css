@@ -220,6 +220,7 @@
   /* --- Type scale --------------------------------------------------------
      Fluid between a 360px and a 1440px viewport, then clamped. Above 1440px
      type stops growing — extra width becomes margin, never longer lines. */
+  --fs-2xs: 0.6875rem; /* 11px — kbd hints, result eyebrows, icon captions */
   --fs-xs: 0.75rem; /* 12px — badges, tags, overline */
   --fs-sm: 0.875rem; /* 14px — metadata, captions, UI */
   --fs-base: 1rem; /* 16px — UI body */
@@ -328,6 +329,7 @@
   --color-neutral: var(--neutral);
   --color-neutral-soft: var(--neutral-soft);
 
+  --text-2xs: var(--fs-2xs);
   --text-xs: var(--fs-xs);
   --text-sm: var(--fs-sm);
   --text-base: var(--fs-base);

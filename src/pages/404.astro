@@ -56,6 +56,26 @@ import { site } from '../config/site.ts';
     padding: 0;
   }
 
+  /*
+   * These links are the entire content of this page — the answer to "where did
+   * it go". A bare <a> inherits its colour (global.css §5), so without this
+   * they rendered as an unremarkable row of body text on the one page whose
+   * only job is to offer somewhere to go.
+   */
+  .routes a {
+    display: inline-block;
+    padding-block: 0.375rem;
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: from-font;
+    text-underline-offset: 0.15em;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .routes a:hover {
+    color: var(--accent-hover);
+  }
+
   .actions {
     display: flex;
     flex-wrap: wrap;

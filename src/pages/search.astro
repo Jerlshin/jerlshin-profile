@@ -199,14 +199,41 @@ const tagFacets = facets(allPosts, blogTagHref);
     gap: 0.5rem;
   }
 
+  /* The archive links are the no-JavaScript answer for this page, so they have
+     to read as links rather than as a line of body text — `a` inherits its
+     colour by default (global.css §5), which left them indistinguishable from
+     the heading above them. */
+  .links a {
+    display: inline-block;
+    padding-block: 0.25rem;
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: from-font;
+    text-underline-offset: 0.15em;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .links a:hover {
+    color: var(--accent-hover);
+  }
+
   .tags a {
     display: inline-block;
     padding: 0.1875rem 0.5rem;
+    color: var(--ink-2);
     background-color: var(--surface-2);
     border: 1px solid var(--line);
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-full);
     font-family: var(--ff-mono);
     font-size: var(--fs-xs);
+    transition:
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
+  }
+
+  .tags a:hover {
+    color: var(--accent);
+    border-color: var(--control);
   }
 
   .count {

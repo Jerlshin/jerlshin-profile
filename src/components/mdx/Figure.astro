@@ -35,7 +35,20 @@ const { src, alt, caption, wide = false, priority = false, widths, class: classN
 // Never upscale: cap the candidate widths at the source's own width, or the
 // browser downloads a "larger" file with no additional detail in it.
 const candidates = (widths ?? [640, 960, 1280]).filter((w) => w <= src.width);
-const sizes = wide ? '(min-width: 64rem) 60rem, 100vw' : `(min-width: 64rem) var(--measure), 100vw`;
+
+/**
+ * `sizes` IS NOT CSS, so it cannot reference a custom property.
+ *
+ * The HTML source-size parser accepts a <length> and drops any entry it cannot
+ * parse; `var(--measure)` is dropped, leaving the attribute to fall back to
+ * 100vw. Every figure in a prose column then advertised itself as viewport-wide
+ * and the browser downloaded the 1280px candidate for a ~600px slot. The
+ * literal below is the rendered width of the 68ch measure, rounded up.
+ */
+const MEASURE_PX = '40rem';
+const sizes = wide
+  ? '(min-width: 64rem) 60rem, 100vw'
+  : `(min-width: 64rem) ${MEASURE_PX}, 100vw`;
 ---
 
 <figure class:list={['figure', { wide }, className]}>

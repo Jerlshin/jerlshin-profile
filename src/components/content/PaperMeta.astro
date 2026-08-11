@@ -13,18 +13,22 @@
  * set here rather than on the page so every paper carries it identically.
  */
 import type { CollectionEntry } from 'astro:content';
+import type { HTMLAttributes } from 'astro/types';
 import AuthorList from './AuthorList.astro';
 import VenueLine from './VenueLine.astro';
 import StatusBadge from '../primitives/StatusBadge.astro';
 import Btn from '../primitives/Btn.astro';
 import { formatDate, isoDate } from '../../lib/dates.ts';
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<'div'>, 'data'> {
   data: CollectionEntry<'research'>['data'];
-  class?: string;
 }
 
-const { data, class: className } = Astro.props;
+// `...rest` also carries a parent component's scope attribute — see Nav.astro.
+// Without the spread, PaperLayout's `.meta { margin-block-start }` compiles to
+// `.meta[data-astro-cid-…]`, lands on nothing, and the byline sits flush
+// against the paper's <h1>.
+const { data, class: className, ...rest } = Astro.props;
 
 /**
  * Declared once, in the order a reader wants them: the canonical record first,
@@ -48,7 +52,7 @@ const links = LINKS.map((l) => ({ ...l, href: data.links[l.key] })).filter(
 );
 ---
 
-<div class:list={['meta', className]}>
+<div class:list={['meta', className]} {...rest}>
   <AuthorList authors={data.authors} truncated={data.authorsTruncated} />
 
   <div class="line">
