@@ -17,6 +17,7 @@ import { site } from '../../config/site.ts';
 import Nav from './Nav.astro';
 import Icon from '../primitives/Icon.astro';
 import Btn from '../primitives/Btn.astro';
+import ThemeToggle from './ThemeToggle.astro';
 ---
 
 <button
@@ -34,9 +35,12 @@ import Btn from '../primitives/Btn.astro';
   <div class="panel">
     <div class="head">
       <span class="overline">Menu</span>
-      <button id="drawer-close" type="button" class="trigger" aria-label="Close navigation menu">
-        <Icon name="x" size="1.25rem" />
-      </button>
+      <div class="actions">
+        <ThemeToggle />
+        <button id="drawer-close" type="button" class="trigger" aria-label="Close navigation menu">
+          <Icon name="x" size="1.25rem" />
+        </button>
+      </div>
     </div>
 
     <Nav variant="stack" class="drawer-nav" />
@@ -156,6 +160,12 @@ import Btn from '../primitives/Btn.astro';
     display: flex;
     align-items: center;
     justify-content: space-between;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
   }
 
   .drawer-nav {

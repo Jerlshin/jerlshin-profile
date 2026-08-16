@@ -172,6 +172,12 @@ const {
       apply();
     });
 
+    const emptyReset = empty?.querySelector<HTMLButtonElement>('[data-reset-filter]');
+    emptyReset?.addEventListener('click', () => {
+      active.clear();
+      apply();
+    });
+
     // Swap the fallback links for the live control, then apply any ?tag= state.
     root.parentElement?.querySelector('[data-tag-fallback]')?.remove();
     root.hidden = false;
@@ -253,15 +259,20 @@ const {
     color: var(--accent);
   }
 
-  /* At 360px the chip row becomes a horizontal scroller rather than four
-     stacked rows that push the archive below the fold (§6.4). */
+  /* At 360px the chip row becomes a horizontal scroller with adequate touch hit-areas */
   @media (max-width: 40rem) {
     .chips {
       flex-wrap: nowrap;
       overflow-x: auto;
       overscroll-behavior-x: contain;
-      padding-block-end: 0.25rem;
+      padding-block-end: 0.375rem;
       scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .chip {
+      padding: 0.5rem 0.75rem;
+      min-block-size: 2rem;
     }
   }
 </style>

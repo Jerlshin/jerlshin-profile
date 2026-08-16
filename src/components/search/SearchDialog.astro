@@ -81,8 +81,17 @@ import SearchResults from './SearchResults.astro';
      */
     let mounted: Promise<SearchPanel> | undefined;
 
+    const lockScroll = () => {
+      document.documentElement.style.overflow = 'hidden';
+    };
+
+    const unlockScroll = () => {
+      document.documentElement.style.overflow = '';
+    };
+
     const open = () => {
       if (dialog.open) return;
+      lockScroll();
       dialog.showModal();
       mounted ??= import('../../lib/search-ui.ts').then((m) => m.mountSearch(panel));
       void mounted.then((s) => s.focus());
@@ -90,6 +99,7 @@ import SearchResults from './SearchResults.astro';
 
     trigger?.addEventListener('click', open);
     dialog.querySelector('[data-search-close]')?.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', unlockScroll);
 
     // A click landing on the <dialog> itself rather than the panel is the
     // backdrop.
@@ -123,6 +133,13 @@ import SearchResults from './SearchResults.astro';
     color: var(--ink);
   }
 
+  @media (max-width: 40rem) {
+    .dialog {
+      margin-block-start: 0.5rem;
+      inline-size: calc(100vw - 1rem);
+    }
+  }
+
   .dialog::backdrop {
     /* A literal, for the same reason as MobileDrawer's: ::backdrop sits in the
        top layer and does not reliably inherit custom properties across engines.
@@ -139,6 +156,12 @@ import SearchResults from './SearchResults.astro';
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-2);
     overflow: hidden;
+  }
+
+  @media (max-width: 40rem) {
+    .panel {
+      max-block-size: calc(100dvh - 1rem);
+    }
   }
 
   .field {
@@ -204,11 +227,22 @@ import SearchResults from './SearchResults.astro';
   }
 
   .foot {
-    padding: 0.625rem 0.875rem;
+    padding: 0.75rem 0.875rem;
     border-block-start: 1px solid var(--line);
     background-color: var(--surface-2);
     color: var(--ink-3);
     font-family: var(--ff-mono);
-    font-size: var(--fs-2xs);
+    font-size: var(--fs-xs);
+  }
+
+  .foot a {
+    display: inline-block;
+    color: var(--ink-2);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .foot a:hover {
+    color: var(--ink);
   }
 </style>

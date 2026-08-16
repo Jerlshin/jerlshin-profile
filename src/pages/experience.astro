@@ -82,6 +82,11 @@ const [allRoles, allDegrees, allSkills] = await Promise.all([roles(), degrees(),
     gap: 1rem;
   }
 
+  .skills > :global(*),
+  .education > :global(*) {
+    height: 100%;
+  }
+
   @media (min-width: 48rem) {
     .skills {
       grid-template-columns: repeat(2, 1fr);

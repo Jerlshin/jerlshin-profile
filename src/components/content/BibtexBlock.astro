@@ -63,16 +63,21 @@ const id = `bibtex-${citeKey(paper)}`;
     button.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(pre.textContent ?? '');
+        idle.hidden = true;
+        done.hidden = false;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          idle.hidden = false;
+          done.hidden = true;
+        }, RESET_MS);
       } catch {
-        return; // a denied permission must not claim success
+        // Fallback: select text if direct clipboard write fails
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
       }
-      idle.hidden = true;
-      done.hidden = false;
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        idle.hidden = false;
-        done.hidden = true;
-      }, RESET_MS);
     });
 
     button.hidden = false;
@@ -101,8 +106,8 @@ const id = `bibtex-${citeKey(paper)}`;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-block-size: 2rem;
-    padding-inline: 0.75rem;
+    min-block-size: 2.25rem;
+    padding-inline: 0.875rem;
     border: 1px solid var(--control);
     border-radius: var(--radius-sm);
     background-color: var(--surface);
@@ -110,9 +115,19 @@ const id = `bibtex-${citeKey(paper)}`;
     font-size: var(--fs-xs);
     font-weight: 500;
     cursor: pointer;
+    position: relative;
     transition:
       color var(--dur-fast) var(--ease),
       border-color var(--dur-fast) var(--ease);
+  }
+
+  /* Expand touch hit-area on mobile / touch viewports */
+  @media (pointer: coarse), (max-width: 40rem) {
+    .copy::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+    }
   }
 
   .copy:hover {

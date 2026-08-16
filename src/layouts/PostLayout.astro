@@ -191,5 +191,12 @@ const showToc = data.toc;
       grid-column: 1;
       grid-row: 1;
     }
+
+    /* Keep margin notes in flow when TOC rail occupies the right margin (§6.4) */
+    .layout.has-rail :global(.aside:not(.inline)) {
+      float: none;
+      inline-size: auto;
+      margin-inline-end: 0;
+    }
   }
 </style>

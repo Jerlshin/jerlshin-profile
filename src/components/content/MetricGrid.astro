@@ -45,15 +45,12 @@ const { metrics, label = 'Key results', size = 'md', class: className, ...rest }
 <style>
   .grid {
     display: grid;
-    /* auto-fit rather than a fixed column count: three metrics fill the row,
-       one metric does not stretch to 100% and look like a banner. */
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-    gap: 1px;
+    /* auto-fit with 13rem min-width ensures balanced multi-column distribution */
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0.75rem;
     margin: 0;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    background-color: var(--line);
-    overflow: hidden;
+    border: 0;
+    background-color: transparent;
   }
 
   .metric {
@@ -61,6 +58,8 @@ const { metrics, label = 'Key results', size = 'md', class: className, ...rest }
     flex-direction: column;
     gap: 0.25rem;
     padding: 1rem 1.125rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
     background-color: var(--surface);
   }
 

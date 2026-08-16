@@ -153,12 +153,13 @@ const { class: className } = Astro.props;
     line-height: 1.5;
   }
 
-  /* Pagefind wraps every matched term in <mark>. Styled as weight and colour
-     rather than the UA's yellow highlight, which does not survive either
-     theme's background. */
+  /* Pagefind wraps every matched term in <mark>. Styled with high-contrast accent tint
+     so keyword hits stand out clearly in both light and dark themes. */
   .results :global(.result-excerpt mark) {
-    background: none;
-    color: var(--ink);
+    background-color: var(--accent-soft);
+    color: var(--accent);
+    padding: 0.05em 0.25em;
+    border-radius: var(--radius-xs);
     font-weight: 600;
   }
 </style>

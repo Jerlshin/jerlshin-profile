@@ -18,15 +18,24 @@ interface Props extends HTMLAttributes<'div'> {
   icon?: string;
   /** Start hidden — for the filter's no-results state, revealed by script. */
   hidden?: boolean;
+  /** Optional reset button label for filter empty states. */
+  actionLabel?: string;
 }
 
-const { title, body, icon = 'search-x', hidden = false, class: className, ...rest } = Astro.props;
+const { title, body, icon = 'search-x', hidden = false, actionLabel, class: className, ...rest } = Astro.props;
 ---
 
 <div class:list={['empty', className]} hidden={hidden} {...rest}>
   <Icon name={icon} size="1.5rem" class="glyph" />
   <p class="title">{title}</p>
   {body && <p class="body">{body}</p>}
+  {
+    actionLabel && (
+      <button type="button" class="reset-btn" data-reset-filter>
+        {actionLabel}
+      </button>
+    )
+  }
   <slot />
 </div>
 
@@ -60,5 +69,32 @@ const { title, body, icon = 'search-x', hidden = false, class: className, ...res
     font-size: var(--fs-sm);
     line-height: var(--lh-normal);
     text-wrap: pretty;
+  }
+
+  .reset-btn {
+    margin-block-start: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4375rem 0.875rem;
+    min-block-size: 2.25rem;
+    border: 1px solid var(--control);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface);
+    color: var(--ink);
+    font-family: var(--ff-sans);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease),
+      background-color var(--dur-fast) var(--ease);
+  }
+
+  .reset-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background-color: var(--surface-2);
   }
 </style>

@@ -86,7 +86,7 @@ const hasAfter = Astro.slots.has('after');
 <BaseLayout {title} {description} {image} {imageAlt} {noindex}>
   <slot name="head" slot="head" />
 
-  <Container width="shell" class="archive">
+  <Container width={columns === 1 ? 'content' : 'shell'} class="archive">
     {crumbs && crumbs.length > 0 && <Breadcrumbs items={crumbs} class="crumbs" />}
 
     {
