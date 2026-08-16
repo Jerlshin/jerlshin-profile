@@ -31,9 +31,9 @@ const { roles, level = 3, class: className, ...rest } = Astro.props;
     />
   ) : (
     <ol class:list={['timeline', className]} {...rest}>
-      {roles.map((role) => (
-        <li>
-          <ExperienceItem role={role} level={level} />
+      {roles.map((role, i) => (
+        <li class="timeline-entry">
+          <ExperienceItem role={role} level={level} isLast={i === roles.length - 1} />
         </li>
       ))}
     </ol>
@@ -43,6 +43,14 @@ const { roles, level = 3, class: className, ...rest } = Astro.props;
 <style>
   .timeline {
     list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .timeline-entry {
     margin: 0;
     padding: 0;
   }
